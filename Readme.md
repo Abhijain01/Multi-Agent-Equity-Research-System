@@ -7,8 +7,7 @@
 [![Groq](https://img.shields.io/badge/LLM-Groq%20Llama--3.3--70B-orange.svg)](https://groq.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Built as part of Futurense Technologies Summer Internship 2026**
-Segment 5 — LLM Systems & Applied GenAI · Problem E1
+
 
 ---
 
@@ -188,17 +187,3 @@ Results are logged to Langfuse and saved as a JSON report in `eval/results/`.
 
 ---
 
-## Internship Context
-
-This project was built during the **Futurense Technologies Summer Internship 2026** (22 June – 26 July 2026) as part of the LLM Systems & Applied GenAI segment.
-
-- **Milestone 1:** 19 July 2026 — Alpha build with core agent pipeline working
-- **Final submission:** 26 July 2026 — Deployed system, eval report, ADRs, Loom walkthrough
-
----
-
-## Author
-
-**Abhishek Jain**
-B.Tech CSE (AI/ML) · Lovely Professional University · 2027 Batch
-[GitHub](https://github.com/Abhijain01) · abhishekjainjain968@gmail.com
