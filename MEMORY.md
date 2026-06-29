@@ -183,11 +183,15 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 
 ## GitHub Issues Tracker
 
+## GitHub Issues Tracker
+
 | Issue | Title | Week | Status |
 |---|---|---|---|
-| — | — | Pre-week | Not opened yet |
-
-*(Update this table as issues are opened and closed)*
+| #1 | [W1] Tavily search tool with caching | Week 1 | 🟡 Open |
+| #2 | [W1] yfinance financial data tool with caching | Week 1 | 🟡 Open |
+| #3 | [W1] NewsAPI news tool with caching | Week 1 | 🟡 Open |
+| #4 | [W1] LangGraph state schema (Pydantic) | Week 1 | 🟡 Open |
+| #5 | [W1] End-to-end data flow test on Reliance Industries | Week 1 | 🟡 Open |
 
 ---
 
