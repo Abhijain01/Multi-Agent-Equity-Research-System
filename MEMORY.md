@@ -23,32 +23,34 @@
 
 ## Current Status
 
-**Last updated:** 24 June 2026  
-**Current phase:** Pre-Week Setup  
-**Current week goal:** Environment + scaffold
+**Last updated:** 29 June 2026
+**Current phase:** Pre-Week Complete — Week 1 starts tomorrow
+**Current week goal:** Tools layer (Tavily, yfinance, NewsAPI) + State schema
 
 ### What is DONE
 - [x] GitHub repo created and initialized
-- [x] LICENSE added
-- [x] README.md pushed (with Mermaid architecture diagram)
+- [x] LICENSE, README.md, PLAN.md, WORKFLOW.md, MEMORY.md pushed
 - [x] docs/initial_design_doc.docx pushed
-- [x] PLAN.md created
-- [x] WORKFLOW.md created
-- [x] MEMORY.md created
+- [x] Virtual environment (venv) created and activated
+- [x] requirements.txt installed clean
+- [x] .gitignore, .env.example created
+- [x] Full folder scaffold with all __init__.py files
+- [x] cache/.gitkeep in place
+- [x] utils/cache.py — JSON cache utility, all tests passed
+- [x] utils/prompts.py — all 5 agent prompts written
+- [x] docs/adr/ADR001, ADR002, ADR003 — draft versions pushed
+- [x] test_cache.py — manual test passed
 
 ### What is IN PROGRESS
-- [x] Virtual environment setup
-- [x] requirements.txt
-- [x] .gitignore
-- [x] Folder scaffold
+- [ ] GitHub Issues #1-#5 for Week 1 (open these on github.com tonight)
 
 ### What is BLOCKED
-- Nothing blocked currently
+- Tavily API key not yet obtained (needed Monday for tools/search.py)
+- NewsAPI key not yet obtained (needed Wednesday for tools/news.py)
+- Langfuse account not yet created (needed Week 3)
 
 ### What was decided today
-- Segment 5, Problem E1 locked
-- Tech stack locked (see below)
-- Build order locked: Tools → State → Agents → Graph → UI → Eval → Deploy
+- No new decisions — all prior decisions hold
 
 ---
 
@@ -214,6 +216,12 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 - Pushed README and design doc to GitHub
 - Next session: environment setup, requirements.txt, scaffold
 
+### Session 2 — 29 June 2026
+- Built utils/cache.py (JSON cache, md5 hashing, get/set/clear)
+- Built utils/prompts.py (all 5 agent system prompts)
+- Created ADR001, ADR002, ADR003 draft files
+- All tests passed, everything pushed to GitHub
+- Next session: tools/search.py (Tavily) — get Tavily API key tonight at app.tavily.com
 ---
 
 ## How to Update This File
@@ -227,3 +235,4 @@ At the end of every working session:
 6. Add a new entry to "Session Log"
 7. Commit: `docs(memory): update session log and status`
 8. Push
+
