@@ -40,7 +40,7 @@
 - [x] utils/prompts.py — all 5 agent prompts written
 - [x] docs/adr/ADR001, ADR002, ADR003 — draft versions pushed
 - [x] test_cache.py — manual test passed
-
+- [x] alphaagents/tools/search.py — Tavily search wrapper, cache verified with real API call
 ### What is IN PROGRESS
 - [ ] GitHub Issues #1-#5 for Week 1 (open these on github.com tonight)
 
@@ -79,7 +79,7 @@
 | Service | Key obtained | Free tier limit | Notes |
 |---|---|---|---|
 | Groq | ✅ Yes (existing) | 14K tokens/min | Already used in Capital Lens + Ollive |
-| Tavily | ❌ Not yet | 1K searches/month | Get at app.tavily.com |
+| Tavily | ✅ Yes (obtained) | 1K searches/month | Working, cache verified |
 | yfinance | ✅ No key needed | Unlimited | Just pip install |
 | NewsAPI | ❌ Not yet | 100 req/day | Get at newsapi.org |
 | Langfuse | ❌ Not yet | Free tier | Get at cloud.langfuse.com |
@@ -226,6 +226,12 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 - Created ADR001, ADR002, ADR003 draft files
 - All tests passed, everything pushed to GitHub
 - Next session: tools/search.py (Tavily) — get Tavily API key tonight at app.tavily.com
+
+### Session 3 — 30 June 2026
+- Built tools/search.py (Tavily wrapper with caching)
+- Verified cache hit on second call — no duplicate API hit
+- Issue #1 closed
+- Next session: tools/finance.py (yfinance fundamentals tool)
 ---
 
 ## How to Update This File
