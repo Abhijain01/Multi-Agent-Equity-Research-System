@@ -187,8 +187,8 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 
 | Issue | Title | Week | Status |
 |---|---|---|---|
-| #1 | [W1] Tavily search tool with caching | Week 1 | 🟡 Open |
-| #2 | [W1] yfinance financial data tool with caching | Week 1 | 🟡 Open |
+| #1 | [W1] Tavily search tool with caching | Week 1 | ✅ Closed |
+| #2 | [W1] yfinance financial data tool with caching | Week 1 | ✅ Closed |caching | Week 1 | 🟡 Open |
 | #3 | [W1] NewsAPI news tool with caching | Week 1 | 🟡 Open |
 | #4 | [W1] LangGraph state schema (Pydantic) | Week 1 | 🟡 Open |
 | #5 | [W1] End-to-end data flow test on Reliance Industries | Week 1 | 🟡 Open |
@@ -231,7 +231,14 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 - Built tools/search.py (Tavily wrapper with caching)
 - Verified cache hit on second call — no duplicate API hit
 - Issue #1 closed
-- Next session: tools/finance.py (yfinance fundamentals tool)
+- Next session: tools/finance.py (yfinance fundamentals tool) 
+
+### Session 4 — 1 July 2026
+- Built tools/finance.py (yfinance wrapper with caching)
+- Verified cache hit on second call
+- Issue #2 closed
+- Next session: tools/news.py (NewsAPI) — need NewsAPI key first
+
 ---
 
 ## How to Update This File
