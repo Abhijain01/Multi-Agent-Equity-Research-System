@@ -47,3 +47,5 @@ AutoGen was rejected because it is optimised for multi-turn conversation between
 - Every agent must accept the shared `ResearchState` Pydantic model as input and return an updated version as output.
 - The graph topology is defined once in `graph/pipeline.py` and does not change at runtime.
 - Debugging is done by printing state at each node transition and via Langfuse traces.
+
+- -----------
