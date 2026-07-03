@@ -53,14 +53,14 @@ Examples: `feat(tools): add Tavily search wrapper with caching` | `fix(critic): 
 ### Day 6 · Sat 28 Jun — Week 1 GitHub Issues
 **Goal:** GitHub Project board set up. Week 1 issues open.
 
-- [ ] Open these 5 GitHub Issues:
+- [x] Open these 5 GitHub Issues:
   - Issue #1: `[W1] Tavily search tool with caching`
   - Issue #2: `[W1] yfinance financial data tool with caching`
   - Issue #3: `[W1] NewsAPI news tool with caching`
   - Issue #4: `[W1] LangGraph state schema (Pydantic)`
   - Issue #5: `[W1] End-to-end data flow test on Reliance Industries`
-- [ ] Verify `.env` is NOT in git: `git status` should not show `.env`
-- [ ] Rest of day: read LangGraph Python docs — focus on state, nodes, edges
+- [x] Verify `.env` is NOT in git: `git status` should not show `.env`
+- [x] Rest of day: read LangGraph Python docs — focus on state, nodes, edges
 
 ### Day 7 · Sun 29 Jun — Rest / Buffer
 Use this day only if you're behind on scaffold. Otherwise rest.
@@ -73,23 +73,23 @@ Use this day only if you're behind on scaffold. Otherwise rest.
 **Friday Demo:** All three APIs returning data, cached, state schema defined.
 
 ### Mon 30 Jun — Tavily Search Tool
-- [ ] Write `tools/search.py`
+- [x] Write `tools/search.py`
   - Function: `search(query: str, max_results: int = 5) -> list[dict]`
   - Check cache first → if miss, call Tavily → save to cache → return
   - Each result: `{title, url, content, score}`
-- [ ] Test: call `search("Reliance Industries Q4 results")`, print results, check cache folder
-- [ ] Commit + close Issue #1: `feat(tools): add Tavily search wrapper closes #1`
-- [ ] Push
+- [x] Test: call `search("Reliance Industries Q4 results")`, print results, check cache folder
+- [x] Commit + close Issue #1: `feat(tools): add Tavily search wrapper closes #1`
+- [x] Push
 
 ### Tue 1 Jul — Financial Data Tool
-- [ ] Write `tools/finance.py`
+- [x] Write `tools/finance.py`
   - Function: `get_fundamentals(ticker: str) -> dict`
   - Pulls: price, PE ratio, EPS, revenue, net profit, debt-to-equity, market cap
   - Use yfinance `.info` and `.financials`
   - Cache by ticker symbol
-- [ ] Test: `get_fundamentals("RELIANCE.NS")`, print output
-- [ ] Commit + close Issue #2: `feat(tools): add yfinance fundamentals tool closes #2`
-- [ ] Push
+- [x] Test: `get_fundamentals("RELIANCE.NS")`, print output
+- [x] Commit + close Issue #2: `feat(tools): add yfinance fundamentals tool closes #2`
+- [x] Push
 
 ### Wed 2 Jul — News Tool
 - [ ] Write `tools/news.py`
