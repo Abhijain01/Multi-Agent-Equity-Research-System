@@ -23,30 +23,29 @@
 
 ## Current Status
 
-**Last updated:** 29 June 2026
-**Current phase:** Pre-Week Complete — Week 1 starts tomorrow
-**Current week goal:** Tools layer (Tavily, yfinance, NewsAPI) + State schema
+**Last updated:** 4 July 2026
+**Current phase:** Week 1 Complete — Week 2 starts Monday 7 Jul
+**Current week goal:** Agents + Graph Assembly
 
 ### What is DONE
-- [x] GitHub repo created and initialized
-- [x] LICENSE, README.md, PLAN.md, WORKFLOW.md, MEMORY.md pushed
+- [x] GitHub repo, LICENSE, README.md, PLAN.md, WORKFLOW.md, MEMORY.md
 - [x] docs/initial_design_doc.docx pushed
-- [x] Virtual environment (venv) created and activated
-- [x] requirements.txt installed clean
-- [x] .gitignore, .env.example created
-- [x] Full folder scaffold with all __init__.py files
-- [x] cache/.gitkeep in place
+- [x] Virtual environment, requirements.txt, .gitignore, .env.example
+- [x] Full folder scaffold with all __init__.py files + cache/.gitkeep
 - [x] utils/cache.py — JSON cache utility, all tests passed
-- [x] utils/prompts.py — all 5 agent prompts written
+- [x] utils/prompts.py — all 5 agent system prompts written
 - [x] docs/adr/ADR001, ADR002, ADR003 — draft versions pushed
-- [x] test_cache.py — manual test passed
-- [x] alphaagents/tools/search.py — Tavily search wrapper, cache verified with real API call
+- [x] alphaagents/tools/search.py — Tavily wrapper, cache verified
+- [x] alphaagents/tools/finance.py — yfinance wrapper, cache verified
+- [x] alphaagents/tools/news.py — NewsAPI wrapper, cache verified
+- [x] alphaagents/graph/state.py — LangGraph TypedDict state schema
+- [x] test_flow.py — E2E test, all 4 sections passed
+- [x] Week 1 Issues #1-#6 all closed
+
 ### What is IN PROGRESS
-- [ ] GitHub Issues #1-#5 for Week 1 (open these on github.com tonight)
+- [ ] agents/orchestrator.py (Monday 7 Jul)
 
 ### What is BLOCKED
-- Tavily API key not yet obtained (needed Monday for tools/search.py)
-- NewsAPI key not yet obtained (needed Wednesday for tools/news.py)
 - Langfuse account not yet created (needed Week 3)
 
 ### What was decided today
@@ -81,7 +80,7 @@
 | Groq | ✅ Yes (existing) | 14K tokens/min | Already used in Capital Lens + Ollive |
 | Tavily | ✅ Yes (obtained) | 1K searches/month | Working, cache verified |
 | yfinance | ✅ No key needed | Unlimited | Just pip install |
-| NewsAPI | ❌ Not yet | 100 req/day | Get at newsapi.org |
+| NewsAPI | ✅ Yes (obtained) | 100 req/day | Working, cache verified |
 | Langfuse | ❌ Not yet | Free tier | Get at cloud.langfuse.com |
 | HuggingFace | ✅ Yes (existing) | Free | Already used for Ollive deployment |
 
@@ -104,49 +103,49 @@ Everything else is yet to be created.
 
 ---
 
-## File Structure — Target (copy from PLAN.md when built)
+## File Structure — Current State
 
 ```
 FinPilot/
 ├── alphaagents/
-│   ├── __init__.py
+│   ├── __init__.py                ✅
 │   ├── agents/
-│   │   ├── orchestrator.py
-│   │   ├── web_researcher.py
-│   │   ├── financial_data.py
-│   │   ├── news_agent.py
-│   │   ├── writer.py
-│   │   └── critic.py
+│   │   └── __init__.py            ✅ (agents not built yet — Week 2)
 │   ├── graph/
-│   │   ├── state.py
-│   │   └── pipeline.py
+│   │   ├── __init__.py            ✅
+│   │   └── state.py               ✅
 │   ├── tools/
-│   │   ├── search.py
-│   │   ├── finance.py
-│   │   └── news.py
+│   │   ├── __init__.py            ✅
+│   │   ├── search.py              ✅
+│   │   ├── finance.py             ✅
+│   │   └── news.py                ✅
 │   ├── eval/
-│   │   ├── queries.json
-│   │   ├── run.py
-│   │   └── results/
+│   │   └── __init__.py            ✅ (not built yet — Week 3)
 │   └── utils/
-│       ├── cache.py
-│       └── prompts.py
-├── app.py
+│       ├── __init__.py            ✅
+│       ├── cache.py               ✅
+│       └── prompts.py             ✅
 ├── tests/
+│   └── __init__.py                ✅ (not built yet — Week 3)
 ├── cache/
+│   └── .gitkeep                   ✅
 ├── docs/
-├── .env
-├── .env.example
-├── .gitignore
-├── requirements.txt
-├── Dockerfile
-├── README.md
-├── PLAN.md
-├── WORKFLOW.md
-└── MEMORY.md
+│   ├── initial_design_doc.docx    ✅
+│   └── adr/
+│       ├── ADR001-framework-choice.md  ✅
+│       ├── ADR002-llm-provider.md      ✅
+│       └── ADR003-eval-strategy.md     ✅
+├── test_flow.py                   ✅
+├── test_cache.py                  ✅
+├── .env                           ✅ (gitignored)
+├── .env.example                   ✅
+├── .gitignore                     ✅
+├── requirements.txt               ✅
+├── README.md                      ✅
+├── PLAN.md                        ✅
+├── WORKFLOW.md                    ✅
+└── MEMORY.md                      ✅
 ```
-
----
 
 ## Architectural Decisions (Locked)
 
@@ -188,10 +187,11 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 | Issue | Title | Week | Status |
 |---|---|---|---|
 | #1 | [W1] Tavily search tool with caching | Week 1 | ✅ Closed |
-| #2 | [W1] yfinance financial data tool with caching | Week 1 | ✅ Closed |caching | Week 1 | 🟡 Open |
-| #3 | [W1] NewsAPI news tool with caching | Week 1 | 🟡 Open |
-| #4 | [W1] LangGraph state schema (Pydantic) | Week 1 | 🟡 Open |
-| #5 | [W1] End-to-end data flow test on Reliance Industries | Week 1 | 🟡 Open |
+| #2 | [W1] yfinance financial data tool with caching | Week 1 | ✅ Closed |
+| #3 | [W1] NewsAPI news tool with caching | Week 1 | ✅ Closed |
+| #4 | [W1] LangGraph state schema (Pydantic) | Week 1 | ✅ Closed |
+| #5 | [W1] End-to-end data flow test on Reliance Industries | Week 1 | ✅ Closed |
+| #6 | [W1] Weekly update | Week 1 | ✅ Closed |
 
 ---
 
@@ -200,8 +200,8 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 | Milestone | Date | Status |
 |---|---|---|
 | Design doc submitted | 24 Jun | ✅ Done |
-| Architecture sign-off | 27 Jun | ⏳ Pending |
-| Week 1 Demo | 4 Jul | ⏳ Pending |
+| Architecture sign-off | 27 Jun | ✅ Done |
+| Week 1 Demo | 4 Jul | ✅ Done |
 | Week 2 Demo | 11 Jul | ⏳ Pending |
 | Week 3 Demo | 18 Jul | ⏳ Pending |
 | Milestone 1 Submission | 19 Jul | ⏳ Pending |
@@ -237,7 +237,14 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 - Built tools/finance.py (yfinance wrapper with caching)
 - Verified cache hit on second call
 - Issue #2 closed
-- Next session: tools/news.py (NewsAPI) — need NewsAPI key first
+- Next session: tools/news.py (NewsAPI) — need NewsAPI key first 
+
+### Session 5 — 4 July 2026
+- Built tools/news.py (NewsAPI wrapper with caching)
+- Built graph/state.py (LangGraph TypedDict state schema)
+- Built test_flow.py (E2E data flow test — all 4 sections passed)
+- Issues #3, #4, #5, #6 closed — Week 1 complete
+- Next session: Week 2 starts — agents/orchestrator.py (Monday 7 Jul)
 
 ---
 
