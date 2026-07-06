@@ -159,15 +159,15 @@ class ResearchState(BaseModel):
 - [x] Commit + close #7: `feat(agents): add orchestrator agent closes #7`
 
 ### Tue 8 Jul — Data Agents (all three)
-- [ ] Write `agents/web_researcher.py`
+- [x] Write `agents/web_researcher.py`
   - Calls `tools/search.py` for each sub-question
   - Summarises results with citations
   - Output: `WebResearchOutput(summaries: list[str], sources: list[str])`
-- [ ] Write `agents/financial_data.py`
+- [x] Write `agents/financial_data.py`
   - Calls `tools/finance.py`
   - Formats data into structured dict for writer
   - Output: `FinancialOutput(metrics: dict, analysis: str)`
-- [ ] Write `agents/news_agent.py`
+- [x] Write `agents/news_agent.py`
   - Calls `tools/news.py`
   - Extracts sentiment (positive/neutral/negative) + 3 key events
   - Output: `NewsOutput(sentiment: str, key_events: list[str], sources: list[str])`
