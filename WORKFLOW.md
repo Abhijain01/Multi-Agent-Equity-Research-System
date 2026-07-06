@@ -92,17 +92,17 @@ Use this day only if you're behind on scaffold. Otherwise rest.
 - [x] Push
 
 ### Wed 2 Jul — News Tool
-- [ ] Write `tools/news.py`
+- [x] Write `tools/news.py`
   - Function: `get_news(company: str, days: int = 7) -> list[dict]`
   - Pulls last N days of news from NewsAPI
   - Each result: `{title, source, published_at, description, url}`
   - Cache by `{company}_{days}`
-- [ ] Test: `get_news("Reliance Industries")`, print 5 results
-- [ ] Commit + close Issue #3: `feat(tools): add NewsAPI news tool closes #3`
-- [ ] Push
+- [x] Test: `get_news("Reliance Industries")`, print 5 results
+- [x] Commit + close Issue #3: `feat(tools): add NewsAPI news tool closes #3`
+- [x] Push
 
 ### Thu 3 Jul — State Schema
-- [ ] Write `graph/state.py`
+- [x] Write `graph/state.py`
 
 ```python
 # The shape of data flowing through the entire pipeline
@@ -121,18 +121,18 @@ class ResearchState(BaseModel):
     final_note: str
 ```
 
-- [ ] Commit + close Issue #4: `feat(graph): add LangGraph state schema closes #4`
-- [ ] Push
+- [x] Commit + close Issue #4: `feat(graph): add LangGraph state schema closes #4`
+- [x] Push
 
 ### Fri 4 Jul — E2E Data Flow Test + Demo #1
-- [ ] Write a scratch script `test_flow.py` (not in tests/ — just temp):
+- [x] Write a scratch script `test_flow.py` (not in tests/ — just temp):
   - Call all three tools on "Reliance Industries"
   - Print all outputs to console
   - Confirm all three cache files exist
-- [ ] Record a 2-min terminal demo (just screen record — not Loom yet)
-- [ ] Close Issue #5: `test: E2E data flow verified on Reliance Industries closes #5`
-- [ ] Push everything
-- [ ] **Saturday GitHub Issue:** Open Issue #6 `[W1] Weekly update` and paste what's done
+- [x] Record a 2-min terminal demo (just screen record — not Loom yet)
+- [x] Close Issue #5: `test: E2E data flow verified on Reliance Industries closes #5`
+- [x] Push everything
+- [x] **Saturday GitHub Issue:** Open Issue #6 `[W1] Weekly update` and paste what's done
 
 ---
 
@@ -150,13 +150,13 @@ class ResearchState(BaseModel):
 - Issue #12: `[W2] First E2E pipeline run`
 
 ### Mon 7 Jul — Orchestrator + Prompts
-- [ ] Write orchestrator system prompt in `utils/prompts.py`
+- [x] Write orchestrator system prompt in `utils/prompts.py`
   - Input: raw query string
   - Output (Pydantic): `OrchestratorOutput(company: str, sub_questions: list[str], research_plan: list[str])`
-- [ ] Write `agents/orchestrator.py`
+- [x] Write `agents/orchestrator.py`
   - Takes state, calls Groq with structured output, returns updated state
-- [ ] Test: feed "Analyse HDFC Bank for a retail investor", print output
-- [ ] Commit + close #7: `feat(agents): add orchestrator agent closes #7`
+- [x] Test: feed "Analyse HDFC Bank for a retail investor", print output
+- [x] Commit + close #7: `feat(agents): add orchestrator agent closes #7`
 
 ### Tue 8 Jul — Data Agents (all three)
 - [ ] Write `agents/web_researcher.py`
