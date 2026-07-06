@@ -21,10 +21,8 @@
 
 ---
 
-## Current Status
-
-**Last updated:** 4 July 2026
-**Current phase:** Week 1 Complete — Week 2 starts Monday 7 Jul
+**Last updated:** 7 July 2026
+**Current phase:** Week 2 — Day 1 complete
 **Current week goal:** Agents + Graph Assembly
 
 ### What is DONE
@@ -41,16 +39,16 @@
 - [x] alphaagents/graph/state.py — LangGraph TypedDict state schema
 - [x] test_flow.py — E2E test, all 4 sections passed
 - [x] Week 1 Issues #1-#6 all closed
+- [x] agents/orchestrator.py — Groq structured output, tested on HDFC Bank ✅
+- [x] Week 2 Issues #7-#12 opened
 
 ### What is IN PROGRESS
-- [ ] agents/orchestrator.py (Monday 7 Jul)
+- [ ] agents/web_researcher.py — file pre-generated, place + test tomorrow
+- [ ] agents/financial_data.py — file pre-generated, place + test tomorrow
+- [ ] agents/news_agent.py — file pre-generated, place + test tomorrow
 
 ### What is BLOCKED
 - Langfuse account not yet created (needed Week 3)
-
-### What was decided today
-- No new decisions — all prior decisions hold
-
 ---
 
 ## Tech Stack (Locked)
@@ -88,29 +86,12 @@
 
 ## File Structure — Current State
 
-```
-FinPilot/  (= Multi-Agent-Equity-Research-System repo)
-├── docs/
-│   └── initial_design_doc.docx   ✅ pushed
-├── LICENSE                        ✅ pushed
-├── README.md                      ✅ pushed
-├── PLAN.md                        ✅ created (push today)
-├── WORKFLOW.md                    ✅ created (push today)
-└── MEMORY.md                      ✅ created (push today)
-```
-
-Everything else is yet to be created.
-
----
-
-## File Structure — Current State
-
-```
 FinPilot/
 ├── alphaagents/
 │   ├── __init__.py                ✅
 │   ├── agents/
-│   │   └── __init__.py            ✅ (agents not built yet — Week 2)
+│   │   ├── __init__.py            ✅
+│   │   └── orchestrator.py        ✅
 │   ├── graph/
 │   │   ├── __init__.py            ✅
 │   │   └── state.py               ✅
@@ -120,31 +101,18 @@ FinPilot/
 │   │   ├── finance.py             ✅
 │   │   └── news.py                ✅
 │   ├── eval/
-│   │   └── __init__.py            ✅ (not built yet — Week 3)
+│   │   └── __init__.py            ✅
 │   └── utils/
 │       ├── __init__.py            ✅
 │       ├── cache.py               ✅
 │       └── prompts.py             ✅
-├── tests/
-│   └── __init__.py                ✅ (not built yet — Week 3)
-├── cache/
-│   └── .gitkeep                   ✅
-├── docs/
-│   ├── initial_design_doc.docx    ✅
-│   └── adr/
-│       ├── ADR001-framework-choice.md  ✅
-│       ├── ADR002-llm-provider.md      ✅
-│       └── ADR003-eval-strategy.md     ✅
+├── tests/__init__.py              ✅
+├── cache/.gitkeep                 ✅
+├── docs/initial_design_doc.docx   ✅
+├── docs/adr/ (3 ADR drafts)       ✅
 ├── test_flow.py                   ✅
-├── test_cache.py                  ✅
-├── .env                           ✅ (gitignored)
-├── .env.example                   ✅
-├── .gitignore                     ✅
-├── requirements.txt               ✅
-├── README.md                      ✅
-├── PLAN.md                        ✅
-├── WORKFLOW.md                    ✅
-└── MEMORY.md                      ✅
+├── .env (gitignored), .env.example, .gitignore, requirements.txt ✅
+├── README.md, PLAN.md, WORKFLOW.md, MEMORY.md ✅
 ```
 
 ## Architectural Decisions (Locked)
@@ -184,9 +152,17 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 
 ## GitHub Issues Tracker
 
-| #7  | [W2] Orchestrator agent | Week 2 | ✅ Closed |
-| #8  | [W2] Web researcher + financial data + news agents | Week 2 | 🟡 Open |
-| #9  | [W2] Writer agent | Week 2 | 🟡 Open |
+| Issue | Title | Week | Status |
+|---|---|---|---|
+| #1 | [W1] Tavily search tool with caching | Week 1 | ✅ Closed |
+| #2 | [W1] yfinance financial data tool with caching | Week 1 | ✅ Closed |
+| #3 | [W1] NewsAPI news tool with caching | Week 1 | ✅ Closed |
+| #4 | [W1] LangGraph state schema (Pydantic) | Week 1 | ✅ Closed |
+| #5 | [W1] End-to-end data flow test on Reliance Industries | Week 1 | ✅ Closed |
+| #6 | [W1] Weekly update | Week 1 | ✅ Closed |
+| #7 | [W2] Orchestrator agent | Week 2 | ✅ Closed |
+| #8 | [W2] Web researcher + financial data + news agents | Week 2 | 🟡 Open |
+| #9 | [W2] Writer agent | Week 2 | 🟡 Open |
 | #10 | [W2] Critic agent with revision logic | Week 2 | 🟡 Open |
 | #11 | [W2] LangGraph pipeline assembly | Week 2 | 🟡 Open |
 | #12 | [W2] First E2E pipeline run | Week 2 | 🟡 Open |
@@ -250,7 +226,12 @@ Reason: Cuts pipeline latency. All three data agents run in parallel after orche
 - Built agents/orchestrator.py (Groq structured output, OrchestratorOutput Pydantic model)
 - Tested: HDFC Bank query → correctly returned ticker HDFCBANK.NS, 4 sub-questions, 4-step plan
 - Issue #7 closed
-- Next session: agents/web_researcher.py + agents/financial_data.py + agents/news_agent.py (Tuesday)
+- Next session: agents/web_researcher.py + agents/financial_data.py + agents/news_agent.py (Tuesday) 
+
+### Session 7 — 7 July 2026 (evening)
+- Pre-generated agents/web_researcher.py, agents/financial_data.py, agents/news_agent.py
+- Files downloaded, ready to place tomorrow
+- Next session: place + test all 3 agents, commit closes #8
 
 ---
 
