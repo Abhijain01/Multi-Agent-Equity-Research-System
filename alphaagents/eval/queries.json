@@ -1,0 +1,22 @@
+[
+  {"id": 1, "query": "Analyse Reliance Industries for a retail investor", "ticker": "RELIANCE.NS", "category": "large_cap"},
+  {"id": 2, "query": "Analyse TCS for a retail investor", "ticker": "TCS.NS", "category": "large_cap"},
+  {"id": 3, "query": "Analyse HDFC Bank for a retail investor", "ticker": "HDFCBANK.NS", "category": "large_cap"},
+  {"id": 4, "query": "Analyse Infosys for a retail investor", "ticker": "INFY.NS", "category": "large_cap"},
+  {"id": 5, "query": "Analyse ICICI Bank for a retail investor", "ticker": "ICICIBANK.NS", "category": "large_cap"},
+  {"id": 6, "query": "Analyse Zomato for a retail investor", "ticker": "ZOMATO.NS", "category": "mid_cap"},
+  {"id": 7, "query": "Analyse Paytm for a retail investor", "ticker": "PAYTM.NS", "category": "mid_cap"},
+  {"id": 8, "query": "Analyse Nykaa for a retail investor", "ticker": "NYKAA.NS", "category": "mid_cap"},
+  {"id": 9, "query": "Analyse Delhivery for a retail investor", "ticker": "DELHIVERY.NS", "category": "mid_cap"},
+  {"id": 10, "query": "Analyse PB Fintech for a retail investor", "ticker": "POLICYBZR.NS", "category": "mid_cap"},
+  {"id": 11, "query": "Analyse the Indian IT sector outlook for FY2026", "ticker": "TCS.NS", "category": "sector"},
+  {"id": 12, "query": "Analyse the Indian banking sector for a retail investor", "ticker": "HDFCBANK.NS", "category": "sector"},
+  {"id": 13, "query": "Analyse the Indian FMCG sector for a retail investor", "ticker": "HINDUNILVR.NS", "category": "sector"},
+  {"id": 14, "query": "Analyse Tata Motors for a retail investor", "ticker": "TATAMOTORS.NS", "category": "large_cap"},
+  {"id": 15, "query": "Analyse Wipro for a retail investor", "ticker": "WIPRO.NS", "category": "large_cap"},
+  {"id": 16, "query": "Analyse Adani Enterprises for a retail investor", "ticker": "ADANIENT.NS", "category": "stress"},
+  {"id": 17, "query": "Analyse Yes Bank for a retail investor", "ticker": "YESBANK.NS", "category": "stress"},
+  {"id": 18, "query": "Analyse Vodafone Idea for a retail investor", "ticker": "IDEA.NS", "category": "stress"},
+  {"id": 19, "query": "Analyse Bajaj Finance for a retail investor", "ticker": "BAJFINANCE.NS", "category": "large_cap"},
+  {"id": 20, "query": "Analyse Asian Paints for a retail investor", "ticker": "ASIANPAINT.NS", "category": "large_cap"}
+]

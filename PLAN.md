@@ -1,4 +1,4 @@
-# AlphaAgents — Execution Plan
+# AlphaAgents — Execution Plan (UPDATED: Option B UI)
 
 **Repo:** https://github.com/Abhijain01/Multi-Agent-Equity-Research-System  
 **Local:** `C:\Users\abhis\FinPilot`  
@@ -10,12 +10,34 @@
 ## The One Rule
 
 Build in dependency order. Never start a layer before the layer below it works.  
-Tools → State → Agents → Graph → UI → Eval → Deploy.  
-Skipping this order is the #1 reason multi-agent projects collapse in Week 3.
+Tools → State → Agents → Graph → FastAPI Backend → React Frontend → Eval → Deploy.
 
 ---
 
-## Tech Stack (Locked — Do Not Change Without Updating ADR)
+## Architecture (UPDATED — Option B)
+
+```
+┌─────────────────────┐         ┌──────────────────────────┐
+│   Next.js Frontend  │  HTTP   │   FastAPI Backend         │
+│   (Vercel)          │ ──────► │   (HuggingFace Spaces)   │
+│                     │   SSE   │                           │
+│  - Query input      │ ◄────── │  - /api/research/run      │
+│  - Agent status     │         │  - /api/research/history  │
+│  - Research note    │         │  - /api/comparison/run    │
+│  - PDF export       │         │  - /api/research/{id}/pdf │
+│  - Comparison UI    │         │  - /api/eval/score        │
+│  - Eval scores      │         │                           │
+└─────────────────────┘         │  LangGraph Pipeline       │
+                                │  (all 5 agents)           │
+                                └──────────────────────────┘
+```
+
+**Interview answer for two-service deploy:**  
+"I separated concerns — stateless React frontend on Vercel, stateful LangGraph backend on HuggingFace Spaces via Docker. FastAPI streams agent status to the frontend via SSE so the UI updates in real time without polling."
+
+---
+
+## Tech Stack (Locked — UPDATED)
 
 | Component | Choice | Version |
 |---|---|---|
@@ -27,65 +49,79 @@ Skipping this order is the #1 reason multi-agent projects collapse in Week 3.
 | News | NewsAPI | newsapi-python |
 | Structured outputs | Pydantic | v2 |
 | Tracing | Langfuse | latest |
-| Vector memory | FAISS + HuggingFace embeddings | faiss-cpu |
-| UI | Streamlit | latest |
+| **Backend API** | **FastAPI** | **latest** |
+| **Streaming** | **SSE (Server-Sent Events)** | **via FastAPI StreamingResponse** |
+| **Frontend** | **Next.js + React** | **latest** |
+| **Frontend deploy** | **Vercel** | **— (free)** |
+| PDF export | reportlab | latest (server-side) |
 | Testing | pytest | latest |
-| Deployment | HuggingFace Spaces | Docker |
+| **Backend deploy** | **HuggingFace Spaces (Docker)** | **—** |
 
 ---
 
-## File Structure (Final Target)
+## File Structure (Final Target — UPDATED)
 
 ```
 FinPilot/
-├── alphaagents/
-│   ├── __init__.py
+├── alphaagents/                    # Python agent package (unchanged)
 │   ├── agents/
-│   │   ├── __init__.py
-│   │   ├── orchestrator.py       # Decomposes query into sub-tasks
-│   │   ├── web_researcher.py     # Tavily search + fetch + cite
-│   │   ├── financial_data.py     # yfinance + AV stub
-│   │   ├── news_agent.py         # NewsAPI sentiment + events
-│   │   ├── writer.py             # Synthesises equity note
-│   │   └── critic.py             # Reviews claims, triggers revisions
+│   │   ├── orchestrator.py         ✅ Done
+│   │   ├── web_researcher.py
+│   │   ├── financial_data.py
+│   │   ├── news_agent.py
+│   │   ├── writer.py
+│   │   └── critic.py
 │   ├── graph/
-│   │   ├── __init__.py
-│   │   ├── state.py              # LangGraph state schema (Pydantic)
-│   │   └── pipeline.py           # Full agent graph definition
+│   │   ├── state.py                ✅ Done
+│   │   └── pipeline.py
 │   ├── tools/
-│   │   ├── __init__.py
-│   │   ├── search.py             # Tavily wrapper with caching
-│   │   ├── finance.py            # yfinance wrapper with caching
-│   │   └── news.py               # NewsAPI wrapper with caching
+│   │   ├── search.py               ✅ Done
+│   │   ├── finance.py              ✅ Done
+│   │   └── news.py                 ✅ Done
 │   ├── eval/
-│   │   ├── __init__.py
-│   │   ├── queries.json          # 20 sample eval queries
-│   │   ├── run.py                # LLM-as-judge eval runner
-│   │   └── results/              # Eval output JSON reports
+│   │   ├── queries.json
+│   │   ├── run.py
+│   │   └── results/
 │   └── utils/
-│       ├── __init__.py
-│       ├── cache.py              # Local JSON cache for all API calls
-│       └── prompts.py            # System prompts for every agent
-├── app.py                        # Streamlit HITL UI
-├── docs/
-│   ├── initial_design_doc.docx
-│   ├── adr/
-│   │   ├── ADR001-framework-choice.md
-│   │   ├── ADR002-llm-provider.md
-│   │   └── ADR003-eval-strategy.md
-│   └── postmortem.md
+│       ├── cache.py                ✅ Done
+│       └── prompts.py              ✅ Done
+│
+├── backend/                        # NEW — FastAPI backend
+│   ├── main.py                     # FastAPI app, CORS, lifespan
+│   ├── routes/
+│   │   ├── research.py             # POST /run, GET /history, POST /approve
+│   │   ├── comparison.py           # POST /comparison/run (two parallel pipelines)
+│   │   ├── export.py               # GET /{id}/pdf (reportlab PDF)
+│   │   └── eval.py                 # POST /eval/score (LLM-as-judge)
+│   ├── models.py                   # Pydantic request/response models
+│   ├── store.py                    # In-memory note store (dict, keyed by note_id)
+│   └── Dockerfile                  # For HuggingFace Spaces deploy
+│
+├── frontend/                       # NEW — Next.js frontend
+│   ├── app/
+│   │   ├── page.tsx                # Main research page
+│   │   ├── comparison/page.tsx     # Side-by-side comparison page
+│   │   └── layout.tsx              # Root layout, fonts, theme
+│   ├── components/
+│   │   ├── QueryInput.tsx          # Query input + Run button
+│   │   ├── AgentPipeline.tsx       # Live agent status tracker (SSE consumer)
+│   │   ├── ResearchNote.tsx        # Full note display (all 6 sections)
+│   │   ├── EvalScores.tsx          # Factuality/Completeness/Actionability gauges
+│   │   ├── HitlBar.tsx             # Approve / Request Revision bar
+│   │   ├── ComparisonView.tsx      # Side-by-side two-company layout
+│   │   └── MetricsRow.tsx          # 5 key financial metric cards
+│   ├── lib/
+│   │   ├── api.ts                  # API client (fetch wrappers)
+│   │   └── sse.ts                  # SSE hook (useSSE)
+│   ├── package.json
+│   └── next.config.js
+│
 ├── tests/
-│   ├── __init__.py
-│   ├── test_tools.py
-│   ├── test_agents.py
-│   └── test_graph.py
+├── docs/
 ├── cache/
-│   └── .gitkeep
 ├── .env
 ├── .env.example
-├── .gitignore
 ├── requirements.txt
-├── Dockerfile
 ├── README.md
 ├── PLAN.md
 ├── WORKFLOW.md
@@ -94,67 +130,84 @@ FinPilot/
 
 ---
 
-## Build Order & Dependencies
+## API Endpoints (FastAPI Backend)
 
-### Layer 0 — Scaffold (must be done first, everything depends on this)
-- [ ] `requirements.txt` with pinned packages
-- [ ] `.env.example` with all required key names
-- [ ] `.gitignore` (never push `.env` or `cache/`)
-- [ ] All folders + empty `__init__.py` files
-- [ ] `utils/cache.py` — the caching utility every tool will use
+| Method | Endpoint | What it does |
+|---|---|---|
+| POST | `/api/research/run` | Starts pipeline, streams SSE events per agent |
+| GET | `/api/research/history` | Returns list of all past research notes |
+| POST | `/api/research/approve` | Marks note as approved/published |
+| POST | `/api/research/revise` | Sends feedback, re-runs writer + critic |
+| GET | `/api/research/{id}/pdf` | Returns formatted PDF of the note |
+| POST | `/api/comparison/run` | Runs two pipelines in parallel, streams both |
+| POST | `/api/eval/score` | Runs LLM-as-judge on a note, returns scores |
 
-### Layer 1 — Tools (agents cannot exist without these)
-- [ ] `tools/search.py` — Tavily wrapper, reads from cache first
-- [ ] `tools/finance.py` — yfinance wrapper, reads from cache first
-- [ ] `tools/news.py` — NewsAPI wrapper, reads from cache first
-- [ ] Manual test: each tool called directly, response printed and cached
+### SSE Event Shape (streaming)
+```json
+{ "event": "agent_start",  "agent": "orchestrator", "message": "Planning research..." }
+{ "event": "agent_done",   "agent": "orchestrator", "output": { "company": "...", "ticker": "..." } }
+{ "event": "agent_start",  "agent": "web_researcher", "message": "Searching 4 questions..." }
+{ "event": "pipeline_done","note": { ...full research note... } }
+{ "event": "eval_done",    "scores": { "factuality": 4.2, "completeness": 4.6, "actionability": 3.9 } }
+```
 
-### Layer 2 — State Schema (graph cannot exist without this)
-- [ ] `graph/state.py` — full Pydantic model for LangGraph state
-  - query, plan, web_results, financial_data, news_data
-  - draft_note, critique, revision_count, hitl_approved, final_note
+---
 
-### Layer 3 — Agents (depend on tools + state)
-- [ ] `utils/prompts.py` — all system prompts written and versioned here
-- [ ] `agents/orchestrator.py` — decomposes query, returns research plan
-- [ ] `agents/web_researcher.py` — calls search tool, returns cited summaries
-- [ ] `agents/financial_data.py` — calls finance tool, returns structured data
-- [ ] `agents/news_agent.py` — calls news tool, returns sentiment + events
-- [ ] `agents/writer.py` — takes all gathered data, returns structured note
-- [ ] `agents/critic.py` — reviews note, returns pass/fail + feedback
+## Additional Features (Locked)
 
-### Layer 4 — Graph Assembly (depends on all agents + state)
-- [ ] `graph/pipeline.py` — LangGraph graph connecting all agents
-  - Nodes: orchestrator, web_researcher, financial_data, news_agent, writer, critic
-  - Edges: conditional routing from critic (revise vs pass)
-  - Hard cap: revision_count max 2
+### 1. PDF Export
+- Backend: `GET /api/research/{id}/pdf` generates PDF via reportlab
+- Frontend: "Download PDF" button on each note → triggers download
+- PDF includes: header, all 6 sections, sources, AlphaAgents branding
 
-### Layer 5 — UI (depends on graph)
-- [ ] `app.py` — Streamlit HITL interface
-  - Query input
-  - Live agent status (which agent is running)
-  - Draft note display
-  - Approve / Request Revision buttons
-  - Published note display
+### 2. Multi-Company Comparison
+- Route: `POST /api/comparison/run` with `{query1, query2}`
+- Backend: runs both pipelines with `asyncio.gather()` in parallel
+- Frontend: `/comparison` page, split-screen layout, shared metrics comparison table
 
-### Layer 6 — Eval (depends on graph)
-- [ ] `eval/queries.json` — 20 sample queries written
-- [ ] `eval/run.py` — runs all 20, scores with LLM-as-judge
-- [ ] `eval/results/` — output JSON per run
+### 3. Eval Scores Display
+- After note generation, auto-runs LLM-as-judge scoring
+- 3 scores: Factuality (1-5), Completeness (1-5), Actionability (1-5)
+- Displayed as circular gauge components on each note card
+- Color-coded: ≥4 = green, 3-4 = amber, <3 = red
 
-### Layer 7 — Hardening (depends on everything above)
-- [ ] `tests/test_tools.py` — unit tests for every tool wrapper
-- [ ] `tests/test_agents.py` — unit tests for each agent output shape
-- [ ] `tests/test_graph.py` — integration test: one full pipeline run
-- [ ] Langfuse tracing on every agent call
-- [ ] `docs/adr/ADR001-framework-choice.md`
-- [ ] `docs/adr/ADR002-llm-provider.md`
-- [ ] `docs/adr/ADR003-eval-strategy.md`
+---
 
-### Layer 8 — Deploy
-- [ ] `Dockerfile`
-- [ ] HuggingFace Spaces setup
-- [ ] Live URL working
+## Build Order & Dependencies (UPDATED)
+
+### Layer 0-4 — Python Agent Package (Week 1 + Week 2)
+Tools ✅ → State ✅ → Agents (in progress) → Graph → Done
+
+### Layer 5 — FastAPI Backend (Week 3, Mon-Tue)
+- `backend/main.py` — FastAPI app with CORS, lifespan
+- `backend/models.py` — Pydantic models for all requests/responses
+- `backend/store.py` — in-memory note store
+- `backend/routes/research.py` — SSE streaming pipeline runner
+- `backend/routes/comparison.py` — parallel comparison runner
+- `backend/routes/export.py` — PDF generation
+- `backend/routes/eval.py` — LLM-as-judge scoring endpoint
+
+### Layer 6 — React Frontend (Week 3, Wed-Thu)
+- Next.js app init
+- `lib/sse.ts` — SSE consumer hook
+- `lib/api.ts` — API client
+- `components/AgentPipeline.tsx` — live status tracker
+- `components/ResearchNote.tsx` — full note display
+- `components/EvalScores.tsx` — gauge scores
+- `components/HitlBar.tsx` — approve/revise
+- `components/ComparisonView.tsx` — side-by-side
+- `app/page.tsx` — main page
+- `app/comparison/page.tsx` — comparison page
+
+### Layer 7 — Hardening (Week 3 Fri + Week 4)
+- pytest tests
+- Langfuse tracing
+- 3 final ADRs
+- 20-query eval suite
+
+### Layer 8 — Deploy (Week 4)
+- Backend: `backend/Dockerfile` → HuggingFace Spaces
+- Frontend: Vercel deploy (automatic from GitHub)
 
 ---
 
@@ -162,39 +215,36 @@ FinPilot/
 
 | Date | Milestone | What must be true |
 |---|---|---|
-| 4 Jul | Week 1 Demo | All 3 tools working, state schema defined, data flowing |
-| 11 Jul | Week 2 Demo | All 5 agents working, one full E2E run on Reliance Industries |
-| 18 Jul | Week 3 Demo | HITL UI, Langfuse, eval suite, tests, 3 ADRs |
-| 19 Jul | **Milestone 1 Submission** | GitHub Release v1.0-milestone-1 |
-| 25 Jul | Week 4 Demo | Live deployed URL, Loom recorded |
-| 25 Jul | **Milestone 2 + Final** | Everything submitted |
+| 11 Jul | Week 2 Demo | Full pipeline runs end-to-end: query in → research note out |
+| 18 Jul | Week 3 Demo | Live URL: FastAPI backend + React frontend deployed |
+| 19 Jul | **Milestone 1** | GitHub Release v1.0-milestone-1 |
+| 25 Jul | **Final** | Everything submitted, Loom recorded |
 | 26 Jul | Showcase | Live demo to panel |
 
 ---
 
-## Architectural Decisions (Summary)
+## Architectural Decisions (Summary — UPDATED)
 
-Full reasoning in ADR files. Short version:
+**7. FastAPI + React over Streamlit (NEW)**  
+Reason: Genuine production-grade separation of concerns. React frontend on Vercel can be polished to Capital Lens quality. SSE gives real-time agent status without polling. Two-service architecture is more impressive and more defensible in an interview than a Streamlit monolith.
 
-**LangGraph over CrewAI/AutoGen:** Explicit state management, conditional edges, and deterministic routing. CrewAI is too opinionated about roles. AutoGen is too chat-oriented. LangGraph gives full control over the graph.
+**8. SSE over WebSockets for streaming (NEW)**  
+Reason: SSE is unidirectional (server → client) which matches the use case — we never need the client to push data mid-stream. SSE is simpler to implement, works over HTTP/2, and doesn't require a separate WebSocket server. WebSockets would be over-engineered for this.
 
-**Groq over OpenAI:** Free tier, 130K tokens/min throughput, Llama-3.3-70B is strong enough for structured output tasks. OpenAI costs money.
+**9. reportlab for PDF export on backend (NEW)**  
+Reason: Client-side PDF generation (jsPDF, react-pdf) produces inconsistent output. Backend PDF via reportlab gives pixel-perfect, consistent output regardless of browser. PDF is returned as a streaming response from FastAPI.
 
-**Pydantic structured outputs on every agent:** Prevents malformed outputs from breaking downstream agents. Every agent returns a typed Pydantic model, not a raw string.
-
-**Aggressive caching before any API call:** All API responses (Tavily, yfinance, NewsAPI) written to `cache/{tool}/{hash_of_params}.json` on first call. Dev loop never re-hits an API for the same input. Removes rate limit as a day-to-day problem.
-
-**Revision hard cap at 2:** Critic → Writer loop capped at 2 revisions. If critic still fails after 2, note goes to HITL with a flag. Prevents infinite loops.
+**10. asyncio.gather() for parallel comparison (NEW)**  
+Reason: Both company pipelines are I/O-bound (API calls + LLM calls). Running them with asyncio.gather() gives true parallelism without threads or subprocesses.
 
 ---
 
-## Success Criteria (Interview-Defensible)
-
-At the end of 5 weeks, you must be able to say:
+## Success Criteria (Interview-Defensible — UPDATED)
 
 1. "The pipeline runs end-to-end in under 5 minutes for any Indian listed company."
-2. "Every agent returns a typed Pydantic model. No raw string passing between agents."
-3. "I have 20 eval queries with LLM-as-judge scores on factuality, completeness, and actionability."
-4. "Every API call is cached. The system can demo without hitting rate limits."
-5. "I made three explicit architectural decisions documented in ADRs with trade-offs."
-6. "The deployed URL is live. Clone-to-run takes under 15 minutes."
+2. "The frontend is a Next.js app on Vercel. The backend is FastAPI on HuggingFace Spaces streaming SSE events."
+3. "I can compare two stocks side-by-side — both pipelines run in parallel via asyncio.gather()."
+4. "Every research note can be exported as a formatted PDF generated server-side with reportlab."
+5. "Every note has LLM-as-judge eval scores — factuality, completeness, actionability — displayed as gauge components."
+6. "I made 10 explicit architectural decisions documented in ADRs."
+7. "The deployed URL is live. Clone-to-run takes under 15 minutes."

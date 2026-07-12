@@ -27,8 +27,13 @@ langfuse
 faiss-cpu
 sentence-transformers
 
-# UI
-streamlit
+# Backend API
+fastapi
+uvicorn[standard]
+python-multipart
+
+# PDF Export
+reportlab
 
 # Utils
 python-dotenv
