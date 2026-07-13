@@ -11,10 +11,10 @@ API docs:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routes import research, comparison, export, eval as eval_router
+from backend.routes import research, comparison, export, eval as eval_router, market
 
 app = FastAPI(
-    title="AlphaAgents API",
+    title="FinPilot API",
     description="Multi-Agent Equity Research System — FastAPI Backend",
     version="1.0.0",
 )
@@ -24,9 +24,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://*.vercel.app",
-        "https://alphaagents.vercel.app",
+        "http://127.0.0.1:3000",
+        "https://finpilot.vercel.app",
     ],
+    # Star patterns in allow_origins are not supported; use regex for Vercel previews and local dev ports.
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,12 +39,13 @@ app.include_router(research.router)
 app.include_router(comparison.router)
 app.include_router(export.router)
 app.include_router(eval_router.router)
+app.include_router(market.router)
 
 
 @app.get("/")
 async def root():
     return {
-        "name": "AlphaAgents API",
+        "name": "FinPilot API",
         "version": "1.0.0",
         "status": "running",
         "docs": "/docs",

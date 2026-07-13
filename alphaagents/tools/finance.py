@@ -25,6 +25,7 @@ Indian stock tickers:
 """
 
 import yfinance as yf
+from typing import Optional
 from alphaagents.utils import cache
 
 
@@ -34,20 +35,35 @@ def _safe_get(d: dict, key: str, default=None):
     return default if val is None else val
 
 
-def _format_large_number(value) -> str:
+def _currency_symbol(currency: Optional[str]) -> str:
+    """Return a display symbol for a currency code."""
+    if not currency:
+        return ""
+
+    symbols = {
+        "INR": "₹",
+        "USD": "$",
+        "EUR": "€",
+        "GBP": "£",
+        "JPY": "¥",
+    }
+    return symbols.get(currency.upper(), "")
+
+
+def _format_large_number(value, currency_symbol: str = "") -> str:
     """Convert large numbers to human-readable format (1.2B, 450M, etc.)"""
     if value is None:
         return "N/A"
     try:
         value = float(value)
         if value >= 1_000_000_000_000:
-            return f"₹{value / 1_000_000_000_000:.2f}T"
+            return f"{currency_symbol}{value / 1_000_000_000_000:.2f}T"
         elif value >= 1_000_000_000:
-            return f"₹{value / 1_000_000_000:.2f}B"
+            return f"{currency_symbol}{value / 1_000_000_000:.2f}B"
         elif value >= 1_000_000:
-            return f"₹{value / 1_000_000:.2f}M"
+            return f"{currency_symbol}{value / 1_000_000:.2f}M"
         else:
-            return f"₹{value:,.0f}"
+            return f"{currency_symbol}{value:,.0f}"
     except (TypeError, ValueError):
         return "N/A"
 
@@ -184,6 +200,9 @@ def get_fundamentals(ticker: str) -> dict:
     debt_to_equity = _safe_get(info, "debtToEquity")
     dividend_yield = _safe_get(info, "dividendYield")
 
+    currency = _safe_get(info, "currency", "INR")
+    currency_symbol = _currency_symbol(currency)
+
     # Revenue history from financials DataFrame
     revenue_history = _get_revenue_history(yticker)
 
@@ -202,11 +221,12 @@ def get_fundamentals(ticker: str) -> dict:
         "company_name": _safe_get(info, "longName", ticker),
         "sector": _safe_get(info, "sector", "N/A"),
         "industry": _safe_get(info, "industry", "N/A"),
-        "currency": _safe_get(info, "currency", "INR"),
+        "currency": currency,
+        "currency_symbol": currency_symbol,
 
         # Valuation
         "current_price": current_price,
-        "market_cap": _format_large_number(market_cap_raw),
+        "market_cap": _format_large_number(market_cap_raw, currency_symbol),
         "market_cap_raw": market_cap_raw,
         "pe_ratio": _safe_get(info, "trailingPE"),
         "forward_pe": _safe_get(info, "forwardPE"),

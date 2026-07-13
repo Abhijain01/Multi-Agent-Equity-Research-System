@@ -62,15 +62,17 @@ def _get_llm():
 
 def _format_metrics_for_prompt(data: dict) -> str:
     """Format the raw fundamentals dict into a clean text block for the LLM."""
+    currency_symbol = data.get("currency_symbol", "")
+
     lines = [
         f"Company: {data.get('company_name', 'N/A')}",
         f"Sector: {data.get('sector', 'N/A')}",
-        f"Current Price: ₹{data.get('current_price', 'N/A')}",
+        f"Current Price: {currency_symbol}{data.get('current_price', 'N/A')}",
         f"Market Cap: {data.get('market_cap', 'N/A')}",
         f"PE Ratio (Trailing): {data.get('pe_ratio', 'N/A')}",
         f"Forward PE: {data.get('forward_pe', 'N/A')}",
         f"Price-to-Book: {data.get('price_to_book', 'N/A')}",
-        f"EPS (Trailing): ₹{data.get('eps_trailing', 'N/A')}",
+        f"EPS (Trailing): {currency_symbol}{data.get('eps_trailing', 'N/A')}",
         f"Dividend Yield: {data.get('dividend_yield', 'N/A')}",
         f"Gross Margin: {data.get('gross_margin', 'N/A')}",
         f"Operating Margin: {data.get('operating_margin', 'N/A')}",
@@ -79,7 +81,7 @@ def _format_metrics_for_prompt(data: dict) -> str:
         f"Debt-to-Equity: {data.get('debt_to_equity', 'N/A')}",
         f"Revenue Growth (YoY): {data.get('revenue_growth_yoy', 'N/A')}",
         f"Earnings Growth (YoY): {data.get('earnings_growth_yoy', 'N/A')}",
-        f"Book Value per Share: ₹{data.get('book_value_per_share', 'N/A')}",
+        f"Book Value per Share: {currency_symbol}{data.get('book_value_per_share', 'N/A')}",
     ]
 
     # Add revenue history if available

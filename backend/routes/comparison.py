@@ -88,6 +88,8 @@ async def run_comparison(request: ComparisonRequest):
                         "market_cap": state.get("financial_data", {}).get("market_cap"),
                         "pe_ratio": state.get("financial_data", {}).get("pe_ratio"),
                         "roe": state.get("financial_data", {}).get("roe"),
+                        "currency": state.get("financial_data", {}).get("currency"),
+                        "currency_symbol": state.get("financial_data", {}).get("currency_symbol"),
                         "net_profit_margin": state.get("financial_data", {}).get("net_profit_margin"),
                     },
                     "sentiment": state.get("news_data", [{}])[0].get("sentiment", "neutral") if state.get("news_data") else "neutral",
