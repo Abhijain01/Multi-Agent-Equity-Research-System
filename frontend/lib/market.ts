@@ -1,31 +1,50 @@
-const CURRENCY_SYMBOL_MAP: Record<string, string> = {
-  INR: "₹",
-  USD: "$",
-  EUR: "€",
-  GBP: "£",
-  JPY: "¥",
+// frontend/lib/market.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export interface LiveStockData {
+  realtime: {
+    ticker: string;
+    price: number;
+    change: number;
+    change_percent: string;
+    volume: number;
+    source: string;
+    timestamp: string;
+  };
+  fundamentals: any;
+  historical?: {
+    dates: string[];
+    close: number[];
+    volume: number[];
+  };
+}
+
+export const marketApi = {
+  async getLiveData(ticker: string): Promise<LiveStockData | null> {
+    try {
+      const res = await fetch(`${API_BASE}/api/market/live/${ticker}`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getPriceOnly(ticker: string) {
+    try {
+      const res = await fetch(`${API_BASE}/api/market/price/${ticker}`);
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async getQuote(ticker: string) {
+    try {
+      const res = await fetch(`${API_BASE}/api/market/quote/${ticker}`);
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
 };
-
-export function getCurrencySymbol(currency?: string, fallbackTicker?: string): string {
-  if (currency) {
-    const mapped = CURRENCY_SYMBOL_MAP[currency.toUpperCase()];
-    if (mapped) return mapped;
-  }
-
-  if (fallbackTicker?.toUpperCase().endsWith(".NS")) return "₹";
-  return "$";
-}
-
-export function formatLivePrice(
-  value: number | undefined,
-  currency?: string,
-  ticker?: string,
-): string {
-  if (value === undefined || value === null || Number.isNaN(value)) return "N/A";
-
-  const symbol = getCurrencySymbol(currency, ticker);
-  return `${symbol}${value.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}

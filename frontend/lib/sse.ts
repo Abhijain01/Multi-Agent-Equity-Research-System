@@ -1,46 +1,28 @@
-"use client";
+// frontend/lib/sse.ts
 import { useState, useCallback } from "react";
-import { SSEEvent } from "./api";
 
-export type AgentStatus = "waiting" | "running" | "done" | "error";
-
-export interface AgentState {
-  orchestrator: AgentStatus;
-  web_researcher: AgentStatus;
-  financial_data: AgentStatus;
-  news_agent: AgentStatus;
-  writer: AgentStatus;
-  critic: AgentStatus;
+interface SSEEvent {
+  event: string;
+  agent?: string;
+  message?: string;
+  [key: string]: any;
 }
 
-const INITIAL_AGENTS: AgentState = {
-  orchestrator: "waiting",
-  web_researcher: "waiting",
-  financial_data: "waiting",
-  news_agent: "waiting",
-  writer: "waiting",
-  critic: "waiting",
-};
-
 export function useSSEPipeline() {
-  const [agents, setAgents] = useState<AgentState>(INITIAL_AGENTS);
+  const [agents, setAgents] = useState<any[]>([]);
   const [events, setEvents] = useState<SSEEvent[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reset = useCallback(() => {
-    setAgents(INITIAL_AGENTS);
-    setEvents([]);
-    setError(null);
-  }, []);
-
   const stream = useCallback(async (
     url: string,
-    body: object,
-    onDone: (event: SSEEvent) => void
+    body: any,
+    onComplete?: (evt: any) => void
   ) => {
-    reset();
     setIsRunning(true);
+    setError(null);
+    setAgents([]);
+    setEvents([]);
 
     try {
       const response = await fetch(url, {
@@ -49,50 +31,66 @@ export function useSSEPipeline() {
         body: JSON.stringify(body),
       });
 
-      if (!response.body) throw new Error("No response body");
+      if (!response.ok) throw new Error("Failed to start pipeline");
 
-      const reader = response.body.getReader();
+      const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+
+      if (!reader) return;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
+        const lines = buffer.split("\n\n");
         buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
-          try {
-            const evt: SSEEvent = JSON.parse(line.slice(6));
-            setEvents((prev) => [...prev, evt]);
 
-            // Update agent statuses
-            if (evt.event === "agent_start" && evt.agent) {
-              setAgents((prev) => ({ ...prev, [evt.agent!]: "running" }));
+          try {
+            const data = JSON.parse(line.replace("data: ", ""));
+            setEvents((prev) => [...prev, data]);
+
+            if (data.event === "agent_start" || data.event === "agent_done") {
+              setAgents((prev) => {
+                const idx = prev.findIndex((a) => a.name === data.agent);
+                const newAgent = {
+                  name: data.agent,
+                  status: data.event === "agent_start" ? "running" : "done",
+                  message: data.message || "",
+                };
+                if (idx !== -1) {
+                  const copy = [...prev];
+                  copy[idx] = newAgent;
+                  return copy;
+                }
+                return [...prev, newAgent];
+              });
             }
-            if (evt.event === "agent_done" && evt.agent) {
-              setAgents((prev) => ({ ...prev, [evt.agent!]: "done" }));
+
+            if (data.event === "pipeline_done" && onComplete) {
+              onComplete(data);
             }
-            if (evt.event === "pipeline_done" || evt.event === "comparison_done") {
-              onDone(evt);
-              setIsRunning(false);
-            }
-            if (evt.event === "error") {
-              setError(evt.message || "Unknown error");
-              setIsRunning(false);
-            }
-          } catch {}
+          } catch (e) {
+            console.error("SSE parse error", e);
+          }
         }
       }
-    } catch (e: any) {
-      setError(e.message || "Connection failed");
+    } catch (err: any) {
+      setError(err.message || "Pipeline failed");
     } finally {
       setIsRunning(false);
     }
-  }, [reset]);
+  }, []);
+
+  const reset = () => {
+    setAgents([]);
+    setEvents([]);
+    setError(null);
+  };
 
   return { agents, events, isRunning, error, stream, reset };
 }

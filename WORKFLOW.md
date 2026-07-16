@@ -199,14 +199,14 @@ class ResearchState(BaseModel):
 - [x] Commit + close #10: `feat(agents): add critic agent with revision cap closes #10`
 
 ### Fri 11 Jul — Graph Assembly + Demo #2
-- [ ] Write `graph/pipeline.py`
+- [x] Write `graph/pipeline.py`
   - Define all nodes (one per agent)
   - Define edges: orchestrator → parallel (web+financial+news) → writer → critic
   - Conditional edge from critic: revise → writer | pass → HITL
-- [ ] Run full pipeline: `python -m alphaagents.graph.pipeline --query "Analyse Reliance Industries"`
-- [ ] Note goes all the way through — even if messy
-- [ ] Commit + close #11 and #12
-- [ ] **Saturday update:** Issue with full Week 2 summary
+- [x] Run full pipeline: `python -m alphaagents.graph.pipeline --query "Analyse Reliance Industries"`
+- [x] Note goes all the way through — even if messy
+- [x] Commit + close #11 and #12
+- [x] **Saturday update:** Issue with full Week 2 summary
 
 ---
 
@@ -228,8 +228,8 @@ class ResearchState(BaseModel):
 
 **Goal:** FastAPI running locally, SSE streaming pipeline events to curl.
 
-- [ ] Create `backend/` folder structure
-- [ ] Write `backend/models.py` — Pydantic request/response models
+- [x] Create `backend/` folder structure
+- [x] Write `backend/models.py` — Pydantic request/response models
   ```python
   class ResearchRequest(BaseModel):
       query: str
@@ -242,23 +242,23 @@ class ResearchState(BaseModel):
       query1: str
       query2: str
   ```
-- [ ] Write `backend/store.py` — in-memory dict `{note_id: note_data}` for storing notes between requests
-- [ ] Write `backend/routes/research.py`
+- [x] Write `backend/store.py` — in-memory dict `{note_id: note_data}` for storing notes between requests
+- [x] Write `backend/routes/research.py`
   - `POST /api/research/run` → StreamingResponse with SSE events (one per agent)
   - `GET /api/research/history` → returns all stored notes
   - `POST /api/research/approve` → marks note as published
   - `POST /api/research/revise` → sends feedback, re-runs writer + critic
-- [ ] Write `backend/routes/comparison.py`
+- [x] Write `backend/routes/comparison.py`
   - `POST /api/comparison/run` → runs two pipelines with `asyncio.gather()`, SSE both
-- [ ] Write `backend/routes/export.py`
+- [x] Write `backend/routes/export.py`
   - `GET /api/research/{note_id}/pdf` → generates PDF via reportlab, returns as file
-- [ ] Write `backend/routes/eval.py`
+- [x] Write `backend/routes/eval.py`
   - `POST /api/eval/score` → runs LLM-as-judge, returns `{factuality, completeness, actionability}`
-- [ ] Write `backend/main.py`
+- [x] Write `backend/main.py`
   - FastAPI app init, CORS middleware, include all routers
-- [ ] Test: `uvicorn backend.main:app --reload` runs clean
-- [ ] Test: `curl -N http://localhost:8000/api/research/run -d '{"query": "Analyse HDFC Bank"}'` streams SSE events
-- [ ] Commit + close #13: `feat(backend): FastAPI with SSE streaming pipeline closes #13`
+- [x] Test: `uvicorn backend.main:app --reload` runs clean
+- [x] Test: `curl -N http://localhost:8000/api/research/run -d '{"query": "Analyse HDFC Bank"}'` streams SSE events
+- [x] Commit + close #13: `feat(backend): FastAPI with SSE streaming pipeline closes #13`
 
 ---
 
