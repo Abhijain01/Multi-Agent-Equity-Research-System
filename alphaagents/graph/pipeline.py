@@ -40,6 +40,7 @@ from alphaagents.agents.financial_data import financial_data_node
 from alphaagents.agents.news_agent import news_agent_node
 from alphaagents.agents.writer import writer_node
 from alphaagents.agents.critic import critic_node, should_revise
+from alphaagents.agents.scorer import scorer_node
 
 
 # ── Parallel data gathering node ──────────────────────────────────────────────
@@ -92,6 +93,7 @@ def build_graph() -> StateGraph:
     graph.add_node("data_gathering",  data_gathering_node)
     graph.add_node("writer",          writer_node)
     graph.add_node("critic",          critic_node)
+    graph.add_node("scorer",          scorer_node)
 
     # Set entry point
     graph.set_entry_point("orchestrator")
@@ -103,15 +105,16 @@ def build_graph() -> StateGraph:
 
     # Conditional edge from critic:
     #   "writer" → send back to writer for revision
-    #   "hitl"   → end pipeline (HITL handled by FastAPI)
+    #   "hitl"   → note is finalised, run the scorer, THEN end
     graph.add_conditional_edges(
         "critic",
         should_revise,
         {
             "writer": "writer",
-            "hitl":   END,
+            "hitl":   "scorer",
         }
     )
+    graph.add_edge("scorer", END)
 
     return graph.compile()
 

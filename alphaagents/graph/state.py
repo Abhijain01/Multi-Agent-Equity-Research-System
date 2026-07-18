@@ -81,6 +81,12 @@ class ResearchState(TypedDict):
     hitl_feedback: str
     # Human analyst's revision request (if they clicked "Request Revision")
 
+    # ── Scorer output ───────────────────────────────────────────────────
+    scorecard: dict | None
+    # From scorer_node — weighted category scores, overall score, verdict,
+    # confidence, fair-value view, catalysts. See agents/scorer.py. Only
+    # populated once the note is finalised (after critic → hitl).
+
     # ── Final output ───────────────────────────────────────────────────
     final_note: str
     # The approved, published research note
@@ -110,6 +116,7 @@ def get_initial_state(query: str) -> ResearchState:
         needs_review=False,
         hitl_approved=False,
         hitl_feedback="",
+        scorecard=None,
         final_note="",
     )
 

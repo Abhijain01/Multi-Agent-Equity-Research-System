@@ -29,6 +29,25 @@ load_dotenv()
 
 _client = None
 
+# Low-quality / unreliable sources for equity research citations.
+# See MEMORY.md "Known Pipeline Issues": web researcher sometimes pulls
+# from Scribd, Facebook, etc. — not usable as cited sources in a research note.
+BLOCKED_DOMAINS = (
+    "scribd.com",
+    "facebook.com",
+    "pinterest.com",
+    "quora.com",
+    "reddit.com",
+    "slideshare.net",
+    "tiktok.com",
+    "instagram.com",
+)
+
+
+def _is_blocked(url: str) -> bool:
+    url_lower = url.lower()
+    return any(domain in url_lower for domain in BLOCKED_DOMAINS)
+
 
 def _get_client() -> TavilyClient:
     """Lazy-init the Tavily client so importing this module doesn't require a key."""
@@ -76,12 +95,16 @@ def search(query: str, max_results: int = 5) -> list[dict]:
         search_depth="basic",
     )
 
-    # 3. Normalise the response into our standard shape
+    # 3. Normalise the response into our standard shape, filtering out
+    #    low-quality/unreliable domains before they ever reach the writer.
     results = []
     for item in response.get("results", []):
+        url = item.get("url", "")
+        if _is_blocked(url):
+            continue
         results.append({
             "title": item.get("title", ""),
-            "url": item.get("url", ""),
+            "url": url,
             "content": item.get("content", ""),
             "score": item.get("score", 0.0),
         })

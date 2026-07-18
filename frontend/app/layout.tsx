@@ -1,14 +1,12 @@
 // frontend/app/layout.tsx
 import type { Metadata } from 'next';
-// @ts-expect-error CSS import is handled by Next.js bundler.
 import './globals.css';
+import Nav from '@/components/Nav';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'FinPilot • Equity Research',
-  description: 'Professional Multi-Agent Equity Research Platform',
-  icons: {
-    icon: '/favicon.ico',
-  },
+  title: 'FinPilot Pro | AlphaAgents Research Dashboard',
+  description: 'Institutional-grade multi-agent equity research for Indian equities.',
 };
 
 export default function RootLayout({
@@ -18,8 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-[#0b1326] text-[#dae2fd] font-sans antialiased">
-        {children}
+      <body className="bg-surface text-on-surface antialiased flex flex-col min-h-screen">
+        <Nav />
+        <div className="flex-1 flex flex-col">{children}</div>
+        <Footer />
       </body>
     </html>
   );

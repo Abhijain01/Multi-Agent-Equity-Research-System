@@ -62,6 +62,41 @@ def _format_percent(value) -> str:
         return "N/A"
 
 
+# Dividend yields above this are almost always a yfinance unit bug
+# (e.g. returning 0.46 meaning 46% when the real figure is ~0.46%).
+# See MEMORY.md "Known Pipeline Issues" — yfinance sometimes returns
+# dividend_yield already as a whole percent instead of a decimal ratio.
+MAX_SANE_DIVIDEND_YIELD_PCT = 15.0
+
+
+def _format_dividend_yield(value) -> str:
+    """
+    Format dividend yield defensively.
+    yfinance is inconsistent about whether `dividendYield` is a decimal
+    ratio (0.012 = 1.2%) or already a percent (1.2 = 1.2%) depending on
+    the ticker/exchange. We try the standard decimal interpretation first;
+    if that produces an implausible value (>15%), we assume the field was
+    already a percent and clamp/re-interpret instead of showing e.g. 46%.
+    """
+    if value is None:
+        return "N/A"
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return "N/A"
+
+    as_percent_from_ratio = value * 100
+    if as_percent_from_ratio <= MAX_SANE_DIVIDEND_YIELD_PCT:
+        return f"{as_percent_from_ratio:.1f}%"
+
+    # Ratio interpretation gave something absurd — value was probably
+    # already a percent. Clamp so we never show a fictitious 40%+ yield.
+    if value <= MAX_SANE_DIVIDEND_YIELD_PCT:
+        return f"{value:.1f}%"
+
+    return f"{MAX_SANE_DIVIDEND_YIELD_PCT:.1f}%+ (data unreliable)"
+
+
 def _get_revenue_history(ticker_obj) -> list[dict]:
     """
     Pull last 3 years of annual revenue and net income from financials.
@@ -87,6 +122,26 @@ def _get_revenue_history(ticker_obj) -> list[dict]:
         return history
     except Exception:
         return []
+
+
+def _get_ytd_return_percent(yticker, current_price) -> float | None:
+    """
+    Year-to-date return, computed from actual daily closes rather than
+    yfinance's `info` dict (which doesn't reliably expose YTD across tickers).
+    Returns None if we can't establish a start-of-year price.
+    """
+    if current_price is None:
+        return None
+    try:
+        hist = yticker.history(period="ytd")
+        if hist is None or hist.empty:
+            return None
+        start_price = float(hist["Close"].iloc[0])
+        if not start_price:
+            return None
+        return round((float(current_price) - start_price) / start_price * 100, 2)
+    except Exception:
+        return None
 
 
 def get_fundamentals(ticker: str) -> dict:
@@ -184,6 +239,13 @@ def get_fundamentals(ticker: str) -> dict:
     debt_to_equity = _safe_get(info, "debtToEquity")
     dividend_yield = _safe_get(info, "dividendYield")
 
+    # PEG ratio — yfinance has used different field names across versions
+    peg_ratio = _safe_get(info, "trailingPegRatio") or _safe_get(info, "pegRatio")
+
+    # YTD return — yfinance's `info` dict doesn't reliably expose this, so we
+    # compute it from actual daily history rather than guess/omit it.
+    ytd_return_pct = _get_ytd_return_percent(yticker, current_price)
+
     # Revenue history from financials DataFrame
     revenue_history = _get_revenue_history(yticker)
 
@@ -211,7 +273,23 @@ def get_fundamentals(ticker: str) -> dict:
         "pe_ratio": _safe_get(info, "trailingPE"),
         "forward_pe": _safe_get(info, "forwardPE"),
         "price_to_book": _safe_get(info, "priceToBook"),
-        "dividend_yield": _format_percent(dividend_yield),
+        "dividend_yield": _format_dividend_yield(dividend_yield),
+        "peg_ratio": peg_ratio,
+        "ev_to_ebitda": _safe_get(info, "enterpriseToEbitda"),
+        "ev_to_revenue": _safe_get(info, "enterpriseToRevenue"),
+        "beta": _safe_get(info, "beta"),
+        "current_ratio": _safe_get(info, "currentRatio"),
+        "analyst_target_price": _safe_get(info, "targetMeanPrice"),
+        "analyst_count": _safe_get(info, "numberOfAnalystOpinions"),
+        "one_year_return_pct": (
+            round(_safe_get(info, "52WeekChange") * 100, 2)
+            if _safe_get(info, "52WeekChange") is not None
+            else None
+        ),
+        "ytd_return_pct": ytd_return_pct,
+        "exchange": _safe_get(info, "exchange", "N/A"),
+        "short_name": _safe_get(info, "shortName", _safe_get(info, "longName", ticker)),
+        "website": _safe_get(info, "website"),
 
         # Profitability
         "gross_margin": _format_percent(gross_margin),
@@ -245,6 +323,135 @@ def get_fundamentals(ticker: str) -> dict:
     # 5. Save to cache
     cache.set("yfinance", params, result)
 
+    return result
+
+
+# ── Live market data (Dashboard / Live Markets page) ──────────────────────────
+#
+# These two functions back backend/routes/market.py. They intentionally use a
+# SHORT cache TTL (see cache.get_with_ttl below) instead of the permanent cache
+# used by get_fundamentals — a stock's price should not be frozen for the life
+# of the dev cache.
+
+import time
+
+_PRICE_CACHE: dict[str, tuple[float, dict]] = {}
+_PRICE_CACHE_TTL_SECONDS = 30
+
+_HISTORY_CACHE: dict[str, tuple[float, dict]] = {}
+_HISTORY_CACHE_TTL_SECONDS = 300  # 5 minutes — history doesn't need to be as fresh
+
+
+def get_real_time_price(ticker: str) -> dict | None:
+    """
+    Lightweight real-time-ish quote for a ticker. Backed by yfinance's
+    fast_info, which is much cheaper than the full `.info` scrape used by
+    get_fundamentals() and is safe to call on every dashboard refresh.
+
+    Returns:
+        {
+            "ticker": str,
+            "price": float,
+            "previous_close": float,
+            "change": float,
+            "change_percent": str,   # e.g. "+1.42%"
+            "day_high": float | None,
+            "day_low": float | None,
+            "volume": int | None,
+            "source": "yfinance",
+            "timestamp": str (ISO),
+        }
+        or None if the ticker can't be resolved.
+    """
+    now = time.time()
+    cached = _PRICE_CACHE.get(ticker)
+    if cached and (now - cached[0]) < _PRICE_CACHE_TTL_SECONDS:
+        return cached[1]
+
+    def _fast_attr(fast_info, *names):
+        """fast_info's attribute names have changed across yfinance versions
+        (snake_case vs camelCase). Try each candidate name defensively."""
+        for name in names:
+            try:
+                val = getattr(fast_info, name, None)
+                if val is None and hasattr(fast_info, "__getitem__"):
+                    val = fast_info[name]
+            except Exception:
+                val = None
+            if val is not None:
+                return val
+        return None
+
+    try:
+        yticker = yf.Ticker(ticker)
+        fast = yticker.fast_info
+
+        price = _fast_attr(fast, "last_price", "lastPrice")
+        prev_close = _fast_attr(fast, "previous_close", "previousClose")
+
+        if price is None:
+            return None
+
+        change = (price - prev_close) if (prev_close is not None) else None
+        change_percent = (
+            f"{'+' if change >= 0 else ''}{(change / prev_close * 100):.2f}%"
+            if (change is not None and prev_close)
+            else "N/A"
+        )
+
+        result = {
+            "ticker": ticker,
+            "price": round(float(price), 2),
+            "previous_close": round(float(prev_close), 2) if prev_close is not None else None,
+            "change": round(float(change), 2) if change is not None else None,
+            "change_percent": change_percent,
+            "day_high": _fast_attr(fast, "day_high", "dayHigh"),
+            "day_low": _fast_attr(fast, "day_low", "dayLow"),
+            "volume": _fast_attr(fast, "last_volume", "lastVolume"),
+            "source": "yfinance",
+            "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+        }
+    except Exception as e:
+        print(f"[FINANCE] get_real_time_price failed for {ticker}: {e}")
+        return None
+
+    _PRICE_CACHE[ticker] = (now, result)
+    return result
+
+
+def get_historical_data(ticker: str, period: str = "5d") -> dict:
+    """
+    Recent OHLCV history for sparkline/chart rendering.
+
+    Args:
+        ticker: e.g. "RELIANCE.NS"
+        period: yfinance period string — "1d", "5d", "1mo", "3mo", "1y", etc.
+
+    Returns:
+        {"dates": [...], "close": [...], "volume": [...]} — empty lists on failure.
+    """
+    cache_key = f"{ticker}:{period}"
+    now = time.time()
+    cached = _HISTORY_CACHE.get(cache_key)
+    if cached and (now - cached[0]) < _HISTORY_CACHE_TTL_SECONDS:
+        return cached[1]
+
+    try:
+        yticker = yf.Ticker(ticker)
+        hist = yticker.history(period=period)
+        if hist is None or hist.empty:
+            result = {"dates": [], "close": [], "volume": []}
+        else:
+            result = {
+                "dates": [d.strftime("%Y-%m-%d %H:%M") for d in hist.index],
+                "close": [round(float(v), 2) for v in hist["Close"].tolist()],
+                "volume": [int(v) for v in hist["Volume"].tolist()],
+            }
+    except Exception as e:
+        print(f"[FINANCE] get_historical_data failed for {ticker}: {e}")
+        result = {"dates": [], "close": [], "volume": []}
+
+    _HISTORY_CACHE[cache_key] = (now, result)
     return result
 
 

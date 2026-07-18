@@ -8,6 +8,8 @@ export interface LiveStockData {
     change: number;
     change_percent: string;
     volume: number;
+    day_high?: number | null;
+    day_low?: number | null;
     source: string;
     timestamp: string;
   };

@@ -25,7 +25,9 @@ from alphaagents.agents.financial_data import financial_data_node
 from alphaagents.agents.news_agent import news_agent_node
 from alphaagents.agents.writer import writer_node
 from alphaagents.agents.critic import critic_node, should_revise
+from alphaagents.agents.scorer import scorer_node
 from alphaagents.graph.pipeline import data_gathering_node
+from backend.report_utils import build_financial_data_payload, build_sources, build_recent_news, LLM_MODELS_USED, DATA_PROVIDERS_USED
 
 router = APIRouter(prefix="/api/research", tags=["research"])
 
@@ -45,6 +47,7 @@ async def run_research(request: ResearchRequest):
 
     async def generate():
         state = get_initial_state(request.query)
+        started_at = datetime.utcnow()
 
         try:
             # ── Step 1: Orchestrator ──────────────────────────────────
@@ -93,7 +96,20 @@ async def run_research(request: ResearchRequest):
                 if should_revise(state) == "hitl":
                     break
 
-            # ── Step 4: Store and return ───────────────────────────────
+            # ── Step 4: Scorer — weighted scorecard on the finished note ──
+            yield sse("agent_start", {"agent": "scorer", "message": "Scoring across 6 weighted categories..."})
+            result = await asyncio.to_thread(scorer_node, state)
+            state.update(result)
+            yield sse("agent_done", {
+                "agent": "scorer",
+                "overall_score": (state.get("scorecard") or {}).get("overall_score"),
+                "verdict": (state.get("scorecard") or {}).get("verdict"),
+            })
+
+            # ── Step 5: Store and return ───────────────────────────────
+            news_events = state.get("news_data", [{}])[0].get("key_events", []) if state.get("news_data") else []
+            duration_seconds = round((datetime.utcnow() - started_at).total_seconds(), 1)
+
             note_data = {
                 "id": note_id,
                 "query": request.query,
@@ -105,15 +121,23 @@ async def run_research(request: ResearchRequest):
                 "revision_count": state.get("revision_count", 0),
                 "approved": False,
                 "created_at": datetime.utcnow().isoformat(),
-                "financial_data": {
-                    "current_price": state.get("financial_data", {}).get("current_price"),
-                    "market_cap": state.get("financial_data", {}).get("market_cap"),
-                    "pe_ratio": state.get("financial_data", {}).get("pe_ratio"),
-                    "roe": state.get("financial_data", {}).get("roe"),
-                    "dividend_yield": state.get("financial_data", {}).get("dividend_yield"),
-                    "net_profit_margin": state.get("financial_data", {}).get("net_profit_margin"),
-                },
+                "financial_data": build_financial_data_payload(state.get("financial_data", {})),
                 "sentiment": state.get("news_data", [{}])[0].get("sentiment", "neutral") if state.get("news_data") else "neutral",
+                "scorecard": state.get("scorecard"),
+                "sources": build_sources(state.get("web_results", []), news_events),
+                "recent_news": build_recent_news(news_events),
+                "generation_meta": {
+                    "duration_seconds": duration_seconds,
+                    "llm_models": LLM_MODELS_USED,
+                    "data_providers": DATA_PROVIDERS_USED,
+                },
+                # Raw agent context, not shown directly in the UI — kept so
+                # /api/research/revise can rebuild full state instead of
+                # re-writing/re-scoring with empty financial_data/web_results/
+                # news_data (see report_utils.py note on this bug).
+                "_web_results": state.get("web_results", []),
+                "_news_data": state.get("news_data", []),
+                "_financial_data_raw": state.get("financial_data", {}),
             }
             save_note(note_id, note_data)
 
@@ -169,6 +193,11 @@ async def revise_note(request: RevisionRequest):
         state["draft_note"] = note.get("note", "")
         state["hitl_feedback"] = request.feedback
         state["revision_count"] = note.get("revision_count", 0)
+        # Restore the original agent data — without this, the writer/scorer
+        # would be revising with empty financial_data/web_results/news_data.
+        state["web_results"] = note.get("_web_results", [])
+        state["news_data"] = note.get("_news_data", [])
+        state["financial_data"] = note.get("_financial_data_raw", {})
 
         try:
             yield sse("agent_start", {"agent": "writer", "message": "Incorporating analyst feedback..."})
@@ -182,12 +211,27 @@ async def revise_note(request: RevisionRequest):
             passed = not bool(state.get("critique"))
             yield sse("agent_done", {"agent": "critic", "passed": passed})
 
+            # Re-score — the revised note may have changed the thesis/figures,
+            # so the scorecard needs to reflect the new draft, not the old one.
+            yield sse("agent_start", {"agent": "scorer", "message": "Re-scoring revised note..."})
+            result = await asyncio.to_thread(scorer_node, state)
+            state.update(result)
+            yield sse("agent_done", {
+                "agent": "scorer",
+                "overall_score": (state.get("scorecard") or {}).get("overall_score"),
+                "verdict": (state.get("scorecard") or {}).get("verdict"),
+            })
+
+            news_events = state.get("news_data", [{}])[0].get("key_events", []) if state.get("news_data") else []
             updated = {
                 "note": state.get("draft_note", ""),
                 "needs_review": state.get("needs_review", False),
                 "critique": state.get("critique", ""),
                 "revision_count": state.get("revision_count", 0),
                 "approved": False,
+                "scorecard": state.get("scorecard"),
+                "sources": build_sources(state.get("web_results", []), news_events) or note.get("sources", []),
+                "recent_news": build_recent_news(news_events) or note.get("recent_news", []),
             }
             update_note(note_id, updated)
 

@@ -1,67 +1,167 @@
 /* frontend/app/globals.css */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
   background-color: #0b1326;
-  color: #dae2fd;
+  background-image: radial-gradient(rgba(37, 99, 235, 0.07) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+  color: #e1e2ed;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Glassmorphism Cards */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 20px;
+  line-height: 1;
+  user-select: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Glassmorphism & Ghost Borders */
+.ghost-border {
+  border: 1px solid #2d3a59;
+}
+
+.glass-panel {
+  background: rgba(21, 31, 54, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #2d3a59;
+}
+
 .glass-card {
-  background: #131b2e;
-  border: 1px solid #334155;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #151f36;
+  border: 1px solid #2d3a59;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .glass-card:hover {
-  border-color: #3B82F6;
-  transform: translateY(-2px);
+  border-color: #2563eb;
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.15);
 }
 
-/* Live Stock Cards */
-.stock-card {
+/* Cursor & Inputs */
+input, textarea, select {
+  background-color: #0b1326;
+  border: 1px solid #2d3a59;
   transition: all 0.2s ease;
 }
 
-.stock-card:hover {
-  border-color: #3B82F6;
-  transform: translateY(-3px);
-}
-
-/* Input Styling */
-input {
-  background-color: #060e20;
-  border: 1px solid #334155;
-  transition: all 0.2s ease;
-}
-
-input:focus {
-  border-color: #3B82F6;
+input:focus, textarea:focus, select:focus {
+  border-color: #2563eb;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* Button Styling */
-button {
-  transition: all 0.2s ease;
+/* Ticker Scroll Animation */
+.ticker-scroll {
+  animation: scroll-ticker 45s linear infinite;
 }
 
-button:active {
-  transform: scale(0.985);
+@keyframes scroll-ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
-/* Scrollbar */
+/* Price Flash Animations */
+.price-up {
+  color: #4ade80 !important;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+  transition: all 0.15s ease-out;
+}
+
+.price-down {
+  color: #f87171 !important;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+  transition: all 0.15s ease-out;
+}
+
+/* Pulse Animations */
+.pulse-dot {
+  animation: pulse-dot-anim 1.5s infinite;
+}
+
+@keyframes pulse-dot-anim {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.8); }
+}
+
+.animate-agent-pulse {
+  animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: #2d3a59; }
+  50% { border-color: #2563eb; }
+}
+
+/* Gauge SVG Animation */
+.gauge-circle {
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+::-webkit-scrollbar-track {
+  background: #0c0e16;
+}
 ::-webkit-scrollbar-thumb {
-  background-color: #334155;
+  background: #32343d;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #3B82F6;
+  background: #434655;
+}
+
+/* Radial Glow Hover (JS-driven background radial) */
+.radial-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.radial-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(800px circle at var(--x, 0px) var(--y, 0px), rgba(37, 99, 235, 0.08), transparent 40%);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.radial-glow:hover::before {
+  opacity: 1;
+}
+
+.radial-glow > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Staggered Fade-in-up animations */
+.fade-in-stagger {
+  opacity: 0;
+  transform: translateY(15px);
+  animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

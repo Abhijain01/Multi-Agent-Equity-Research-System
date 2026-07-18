@@ -5,6 +5,8 @@ Uses reportlab. Returns PDF as a streaming file download.
 """
 
 import io
+import json
+import re
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from reportlab.lib.pagesizes import A4
@@ -19,6 +21,31 @@ from backend.store import get_note
 router = APIRouter(prefix="/api/research", tags=["export"])
 
 MARGIN = 2 * cm
+
+
+@router.get("/{note_id}/json")
+async def export_json(note_id: str):
+    """
+    Download the full structured report as JSON — the note, scorecard,
+    financial data, sources, and recent news exactly as stored, with the
+    internal `_web_results`/`_news_data`/`_financial_data_raw` context
+    fields (used only to support revisions) stripped out.
+    """
+    note = get_note(note_id)
+    if not note:
+        return {"error": "Note not found"}
+
+    exportable = {k: v for k, v in note.items() if not k.startswith("_")}
+    payload = json.dumps(exportable, indent=2, default=str)
+    buffer = io.BytesIO(payload.encode("utf-8"))
+    buffer.seek(0)
+
+    filename = f"{note.get('ticker', note_id)}_report.json".replace("/", "-")
+    return StreamingResponse(
+        buffer,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 # Styles
 def make_styles():
@@ -70,11 +97,16 @@ async def export_pdf(note_id: str):
         if header and content:
             story.append(Paragraph(header, h2_style))
             # Clean up markdown formatting
-            content_clean = (content
-                .replace("**", "")
-                .replace("*", "")
-                .replace("[Source:", "<font color='#2C3E7A'>[Source:")
-                .replace("]", "]</font>")
+            content_clean = content.replace("**", "").replace("*", "")
+            # Only wrap actual "[Source: ...]" citations in the font tag —
+            # a blind `.replace("]", "]</font>")` would append a stray,
+            # unmatched </font> after every other "]" in the text (e.g. in
+            # risk descriptions), which ReportLab's Paragraph markup parser
+            # then chokes on.
+            content_clean = re.sub(
+                r"\[Source:([^\]]*)\]",
+                r"<font color='#2C3E7A'>[Source:\1]</font>",
+                content_clean,
             )
             for para in content_clean.split("\n\n"):
                 if para.strip():
