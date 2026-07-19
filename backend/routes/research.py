@@ -27,7 +27,7 @@ from alphaagents.agents.writer import writer_node
 from alphaagents.agents.critic import critic_node, should_revise
 from alphaagents.agents.scorer import scorer_node
 from alphaagents.graph.pipeline import data_gathering_node
-from backend.report_utils import build_financial_data_payload, build_sources, build_recent_news, LLM_MODELS_USED, DATA_PROVIDERS_USED
+from backend.report_utils import build_financial_data_payload, build_sources, build_recent_news, linkify_citations, LLM_MODELS_USED, DATA_PROVIDERS_USED
 
 router = APIRouter(prefix="/api/research", tags=["research"])
 
@@ -110,12 +110,18 @@ async def run_research(request: ResearchRequest):
             news_events = state.get("news_data", [{}])[0].get("key_events", []) if state.get("news_data") else []
             duration_seconds = round((datetime.utcnow() - started_at).total_seconds(), 1)
 
+            # Convert the writer's literal "[Source: <url>]" text into clean
+            # numbered markers ([1], [2], ...) matching the Sources &
+            # Citations panel, instead of showing raw URLs mid-sentence.
+            base_sources = build_sources(state.get("web_results", []), news_events)
+            linkified_note, final_sources = linkify_citations(state.get("draft_note", ""), base_sources)
+
             note_data = {
                 "id": note_id,
                 "query": request.query,
                 "company": state.get("company", ""),
                 "ticker": state.get("ticker", ""),
-                "note": state.get("draft_note", ""),
+                "note": linkified_note,
                 "needs_review": state.get("needs_review", False),
                 "critique": state.get("critique", ""),
                 "revision_count": state.get("revision_count", 0),
@@ -124,7 +130,7 @@ async def run_research(request: ResearchRequest):
                 "financial_data": build_financial_data_payload(state.get("financial_data", {})),
                 "sentiment": state.get("news_data", [{}])[0].get("sentiment", "neutral") if state.get("news_data") else "neutral",
                 "scorecard": state.get("scorecard"),
-                "sources": build_sources(state.get("web_results", []), news_events),
+                "sources": final_sources,
                 "recent_news": build_recent_news(news_events),
                 "generation_meta": {
                     "duration_seconds": duration_seconds,
@@ -138,6 +144,7 @@ async def run_research(request: ResearchRequest):
                 "_web_results": state.get("web_results", []),
                 "_news_data": state.get("news_data", []),
                 "_financial_data_raw": state.get("financial_data", {}),
+                "_trace_id": state.get("trace_id"),
             }
             save_note(note_id, note_data)
 
@@ -198,6 +205,8 @@ async def revise_note(request: RevisionRequest):
         state["web_results"] = note.get("_web_results", [])
         state["news_data"] = note.get("_news_data", [])
         state["financial_data"] = note.get("_financial_data_raw", {})
+        if note.get("_trace_id"):
+            state["trace_id"] = note["_trace_id"]
 
         try:
             yield sse("agent_start", {"agent": "writer", "message": "Incorporating analyst feedback..."})
@@ -223,14 +232,16 @@ async def revise_note(request: RevisionRequest):
             })
 
             news_events = state.get("news_data", [{}])[0].get("key_events", []) if state.get("news_data") else []
+            base_sources = build_sources(state.get("web_results", []), news_events) or note.get("sources", [])
+            linkified_note, final_sources = linkify_citations(state.get("draft_note", ""), base_sources)
             updated = {
-                "note": state.get("draft_note", ""),
+                "note": linkified_note,
                 "needs_review": state.get("needs_review", False),
                 "critique": state.get("critique", ""),
                 "revision_count": state.get("revision_count", 0),
                 "approved": False,
                 "scorecard": state.get("scorecard"),
-                "sources": build_sources(state.get("web_results", []), news_events) or note.get("sources", []),
+                "sources": final_sources,
                 "recent_news": build_recent_news(news_events) or note.get("recent_news", []),
             }
             update_note(note_id, updated)

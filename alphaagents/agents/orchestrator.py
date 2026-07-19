@@ -35,6 +35,7 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from alphaagents.graph.state import ResearchState
+from alphaagents.utils.tracing import get_langfuse_config
 from alphaagents.utils.prompts import ORCHESTRATOR_PROMPT
 
 load_dotenv()
@@ -50,7 +51,16 @@ class OrchestratorOutput(BaseModel):
         description="The exact, full company name. E.g. 'Reliance Industries', 'HDFC Bank', 'Tata Consultancy Services'"
     )
     ticker: str = Field(
-        description="The NSE ticker symbol with .NS suffix. E.g. 'RELIANCE.NS', 'HDFCBANK.NS', 'TCS.NS'. Use BSE (.BO) only if NSE is unavailable."
+        description=(
+            "The correct Yahoo Finance ticker symbol for whichever exchange this company "
+            "actually trades on — do NOT force an NSE suffix onto companies that aren't "
+            "Indian. Examples: Indian companies use '.NS' (e.g. 'RELIANCE.NS', 'TCS.NS'; "
+            "fall back to '.BO' only if NSE is unavailable). US companies (NASDAQ/NYSE) use "
+            "the bare symbol with NO suffix (e.g. 'NVDA' for NVIDIA, 'AAPL' for Apple, "
+            "'MSFT' for Microsoft, 'TSLA' for Tesla, 'AMZN' for Amazon). Other exchanges use "
+            "their Yahoo Finance suffix (e.g. '.L' for London, '.T' for Tokyo). Get this "
+            "wrong and every downstream financial data lookup fails."
+        )
     )
     plan: list[str] = Field(
         description="3-5 high-level research steps. E.g. ['Analyse financial fundamentals', 'Review recent news and sentiment', 'Compare with sector peers']"
@@ -108,7 +118,7 @@ def orchestrator_node(state: ResearchState) -> dict:
 
     # Call Groq
     print("[ORCHESTRATOR] Calling Groq (Llama-3.3-70B)...")
-    result: OrchestratorOutput = structured_llm.invoke(messages)
+    result: OrchestratorOutput = structured_llm.invoke(messages, config=get_langfuse_config("orchestrator", state))
 
     print(f"[ORCHESTRATOR] Company identified: {result.company} ({result.ticker})")
     print(f"[ORCHESTRATOR] Generated {len(result.sub_questions)} sub-questions")
