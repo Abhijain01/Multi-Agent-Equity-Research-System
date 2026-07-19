@@ -25,6 +25,7 @@ Indian stock tickers:
 """
 
 import yfinance as yf
+import time
 from alphaagents.utils import cache
 
 
@@ -205,16 +206,33 @@ def get_fundamentals(ticker: str) -> dict:
     if cached is not None:
         return cached
 
-    # 2. Cache miss — fetch from yfinance
+    # 2. Cache miss — fetch from yfinance, with a short retry for transient
+    #    network blips (common when calling Yahoo Finance from cloud/datacenter
+    #    IPs like Render's — occasional blocks/timeouts that a retry clears).
     print(f"[FINANCE] Fetching data for {ticker} from Yahoo Finance...")
     yticker = yf.Ticker(ticker)
 
-    try:
-        info = yticker.info
-    except Exception as e:
-        error_result = {"ticker": ticker, "error": str(e), "data_warning": "Failed to fetch data"}
-        cache.set("yfinance", params, error_result)
-        return error_result
+    info = None
+    last_error = None
+    for attempt in range(1, 3):  # 2 attempts total
+        try:
+            info = yticker.info
+            last_error = None
+            break
+        except Exception as e:
+            last_error = e
+            print(f"[FINANCE] ⚠️ get_fundamentals attempt {attempt}/2 failed for {ticker}: {e}")
+            if attempt < 2:
+                time.sleep(1.5)
+
+    if last_error is not None:
+        # IMPORTANT: do NOT cache this — a transient failure (network blip,
+        # temporary Yahoo rate-limit) would otherwise be cached forever
+        # (cache.py has no TTL), permanently poisoning this ticker until
+        # someone manually clears the cache file. Every future request
+        # should get a fresh attempt instead of replaying today's failure.
+        print(f"[FINANCE] ❌ get_fundamentals gave up on {ticker} after 2 attempts: {last_error}")
+        return {"ticker": ticker, "error": str(last_error), "data_warning": "Failed to fetch data — retrying on next request"}
 
     # 3. Check if we got valid data (yfinance returns minimal dict for invalid tickers)
     if not info or _safe_get(info, "regularMarketPrice") is None and _safe_get(info, "currentPrice") is None:
@@ -332,8 +350,6 @@ def get_fundamentals(ticker: str) -> dict:
 # SHORT cache TTL (see cache.get_with_ttl below) instead of the permanent cache
 # used by get_fundamentals — a stock's price should not be frozen for the life
 # of the dev cache.
-
-import time
 
 _PRICE_CACHE: dict[str, tuple[float, dict]] = {}
 _PRICE_CACHE_TTL_SECONDS = 30
