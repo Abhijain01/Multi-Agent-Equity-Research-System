@@ -18,8 +18,9 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from backend.routes import research, comparison, export, eval as eval_router, market
 
 app = FastAPI(
@@ -27,6 +28,24 @@ app = FastAPI(
     description="Multi-Agent Equity Research System — FastAPI Backend",
     version="1.0.0",
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Return JSON errors with CORS headers instead of opaque browser failures."""
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin and (
+        origin in {"http://localhost:3000", "https://alphaagents.vercel.app"}
+        or origin.startswith("https://") and origin.endswith(".vercel.app")
+    ):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
+        headers=headers,
+    )
 
 # CORS — allow Vercel frontend + local dev
 #
