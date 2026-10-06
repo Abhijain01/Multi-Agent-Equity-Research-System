@@ -69,9 +69,10 @@ class JudgeOutput(BaseModel):
 def score_note(note_text: str) -> dict:
     """Run LLM-as-judge on a note. Returns scores dict."""
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3.6-flash",
+        model="gemini-3.1-flash-lite",
         temperature=0,
         api_key=os.getenv("GEMINI_API_KEY"),
+        max_retries=0,
     )
     structured = llm.with_structured_output(JudgeOutput)
     result: JudgeOutput = structured.invoke([

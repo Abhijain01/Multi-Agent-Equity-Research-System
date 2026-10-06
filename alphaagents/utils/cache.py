@@ -39,10 +39,10 @@ def get(tool_name: str, params: dict) -> Any | None:
     """
     cache_path = _get_cache_path(tool_name, params)
     if cache_path.exists():
-        print(f"[CACHE HIT] {tool_name} → {cache_path.name}")
+        print(f"[CACHE HIT] {tool_name} -> {cache_path.name}")
         with open(cache_path, "r", encoding="utf-8") as f:
             return json.load(f)
-    print(f"[CACHE MISS] {tool_name} → will call API")
+    print(f"[CACHE MISS] {tool_name} -> will call API")
     return None
 
 
@@ -54,7 +54,7 @@ def set(tool_name: str, params: dict, data: Any) -> None:
     cache_path = _get_cache_path(tool_name, params)
     with open(cache_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"[CACHE SET] {tool_name} → {cache_path.name}")
+    print(f"[CACHE SET] {tool_name} -> {cache_path.name}")
 
 
 def clear(tool_name: str | None = None) -> None:

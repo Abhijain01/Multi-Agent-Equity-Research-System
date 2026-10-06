@@ -30,6 +30,7 @@ from alphaagents.graph.pipeline import data_gathering_node
 from backend.report_utils import build_financial_data_payload, build_sources, build_recent_news, linkify_citations, LLM_MODELS_USED, DATA_PROVIDERS_USED
 
 router = APIRouter(prefix="/api/research", tags=["research"])
+research_run_lock = asyncio.Lock()
 
 
 def sse(event: str, data: dict) -> str:
@@ -44,6 +45,26 @@ async def run_research(request: ResearchRequest):
     Streams SSE events for each agent step.
     """
     note_id = str(uuid4())
+
+    if research_run_lock.locked():
+        async def already_running():
+            yield sse(
+                "error",
+                {
+                    "message": (
+                        "A research pipeline is already running. "
+                        "Wait for it to finish before starting another."
+                    )
+                },
+            )
+
+        return StreamingResponse(
+            already_running(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    await research_run_lock.acquire()
 
     async def generate():
         state = get_initial_state(request.query)
@@ -152,6 +173,8 @@ async def run_research(request: ResearchRequest):
 
         except Exception as e:
             yield sse("error", {"message": str(e)})
+        finally:
+            research_run_lock.release()
 
     return StreamingResponse(
         generate(),

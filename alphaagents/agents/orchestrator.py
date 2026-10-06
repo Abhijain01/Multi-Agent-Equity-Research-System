@@ -84,9 +84,10 @@ def _get_llm():
                 "Add it to your .env file."
             )
         _llm = ChatGoogleGenerativeAI(
-            model="gemini-3.6-flash",
+            model="gemini-3.1-flash-lite",
             temperature=0,           # deterministic output for research planning
             api_key=api_key,
+            max_retries=0,
         )
     return _llm
 
@@ -117,7 +118,7 @@ def orchestrator_node(state: ResearchState) -> dict:
     ]
 
     # Call Gemini
-    print("[ORCHESTRATOR] Calling Gemini (gemini-3.6-flash)...")
+    print("[ORCHESTRATOR] Calling Gemini (gemini-3.1-flash-lite)...")
     result: OrchestratorOutput = structured_llm.invoke(messages, config=get_langfuse_config("orchestrator", state))
 
     print(f"[ORCHESTRATOR] Company identified: {result.company} ({result.ticker})")

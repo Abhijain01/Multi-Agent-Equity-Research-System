@@ -1,5 +1,5 @@
 // frontend/lib/sse.ts
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 interface SSEEvent {
   event: string;
@@ -13,12 +13,17 @@ export function useSSEPipeline() {
   const [events, setEvents] = useState<SSEEvent[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlightRef = useRef(false);
 
   const stream = useCallback(async (
     url: string,
     body: any,
     onComplete?: (evt: any) => void
   ) => {
+    // Prevent duplicate submissions, including React Strict Mode effect
+    // replays during local development.
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setIsRunning(true);
     setError(null);
     setAgents([]);
@@ -31,13 +36,15 @@ export function useSSEPipeline() {
         body: JSON.stringify(body),
       });
 
-      if (!response.ok) throw new Error("Failed to start pipeline");
+      if (!response.ok) {
+        throw new Error(`Backend returned HTTP ${response.status}`);
+      }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 
-      if (!reader) return;
+      if (!reader) throw new Error("Backend returned an empty pipeline stream");
 
       while (true) {
         const { done, value } = await reader.read();
@@ -53,6 +60,14 @@ export function useSSEPipeline() {
           try {
             const data = JSON.parse(line.replace("data: ", ""));
             setEvents((prev) => [...prev, data]);
+
+            if (data.event === "error") {
+              setError(
+                data.message ||
+                "The backend could not complete the research pipeline."
+              );
+              continue;
+            }
 
             if (data.event === "agent_start" || data.event === "agent_done") {
               setAgents((prev) => {
@@ -80,8 +95,12 @@ export function useSSEPipeline() {
         }
       }
     } catch (err: any) {
-      setError(err.message || "Pipeline failed");
+      const message = err instanceof TypeError
+        ? "Cannot connect to the backend at http://localhost:8000. Start Uvicorn and try again."
+        : err.message || "Pipeline failed";
+      setError(message);
     } finally {
+      inFlightRef.current = false;
       setIsRunning(false);
     }
   }, []);

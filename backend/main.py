@@ -9,6 +9,15 @@ API docs:
   http://localhost:8000/docs
 """
 
+import sys
+
+# Windows PowerShell may expose a legacy cp1252 stream. Agent logs contain
+# status symbols, so replace unsupported characters instead of failing a run.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routes import research, comparison, export, eval as eval_router, market

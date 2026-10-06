@@ -99,7 +99,7 @@ function ResearchPageInner() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <main className="flex-1 mt-16 flex flex-col md:flex-row overflow-hidden relative">
-        {!note && !isRunning ? (
+        {!note && !isRunning && agents.length === 0 && !error ? (
           <div className="flex-grow flex items-center justify-center px-6 py-20">
             <div className="w-full max-w-2xl bg-surface-container border border-outline-variant p-8 rounded radial-glow select-none">
               <h1 className="font-headline-xl text-headline-xl text-on-surface mb-2 font-bold">
@@ -148,15 +148,21 @@ function ResearchPageInner() {
                 />
               ) : (
                 <div className="flex-grow flex flex-col items-center justify-center space-y-4 px-6 bg-background">
-                  <span className="material-symbols-outlined text-primary text-[48px] animate-spin">
-                    progress_activity
-                  </span>
+                  {error ? (
+                    <span className="material-symbols-outlined text-risk-crimson text-[48px]">
+                      error
+                    </span>
+                  ) : (
+                    <span className="material-symbols-outlined text-primary text-[48px] animate-spin">
+                      progress_activity
+                    </span>
+                  )}
                   <div className="text-center">
                     <p className="text-on-surface font-semibold text-body-lg">
-                      Executing AlphaAgents Pipeline
+                      {error ? "Pipeline could not connect" : "Executing AlphaAgents Pipeline"}
                     </p>
                     <p className="text-outline text-body-sm font-mono mt-1">
-                      Running analysis for &ldquo;{query}&rdquo;...
+                      {error ? error : `Running analysis for “${query}”...`}
                     </p>
                   </div>
                 </div>
