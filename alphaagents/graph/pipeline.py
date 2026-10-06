@@ -31,6 +31,7 @@ Running the pipeline:
 import sys
 import argparse
 import concurrent.futures
+from typing import Callable
 from langgraph.graph import StateGraph, END
 
 from alphaagents.graph.state import ResearchState, get_initial_state
@@ -44,6 +45,31 @@ from alphaagents.agents.scorer import scorer_node
 
 
 # ── Parallel data gathering node ──────────────────────────────────────────────
+
+def _run_data_agent(
+    name: str,
+    agent: Callable[[ResearchState], dict],
+    state: ResearchState,
+) -> dict:
+    """Keep one provider failure from aborting the other gathering agents."""
+    try:
+        return agent(state)
+    except Exception as exc:
+        print(f"[DATA GATHERING] WARNING: {name} failed: {exc}")
+        if name == "web_researcher":
+            return {"web_results": []}
+        if name == "financial_data":
+            return {"financial_data": {"error": f"{name} unavailable: {exc}"}}
+        return {
+            "news_data": [{
+                "sentiment": "neutral",
+                "sentiment_reason": f"{name} unavailable.",
+                "key_events": [],
+                "has_news": False,
+                "error": str(exc),
+            }]
+        }
+
 
 def data_gathering_node(state: ResearchState) -> dict:
     """
@@ -60,9 +86,15 @@ def data_gathering_node(state: ResearchState) -> dict:
     print("[DATA GATHERING] Running: web_researcher + financial_data + news_agent simultaneously")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        web_future     = executor.submit(web_researcher_node, state)
-        finance_future = executor.submit(financial_data_node, state)
-        news_future    = executor.submit(news_agent_node, state)
+        web_future = executor.submit(
+            _run_data_agent, "web_researcher", web_researcher_node, state
+        )
+        finance_future = executor.submit(
+            _run_data_agent, "financial_data", financial_data_node, state
+        )
+        news_future = executor.submit(
+            _run_data_agent, "news_agent", news_agent_node, state
+        )
 
         # Wait for all three to complete
         web_result     = web_future.result()

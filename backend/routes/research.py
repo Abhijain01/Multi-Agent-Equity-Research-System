@@ -69,9 +69,11 @@ async def run_research(request: ResearchRequest):
     async def generate():
         state = get_initial_state(request.query)
         started_at = datetime.utcnow()
+        stage = "initialization"
 
         try:
             # ── Step 1: Orchestrator ──────────────────────────────────
+            stage = "orchestrator"
             yield sse("agent_start", {"agent": "orchestrator", "message": "Planning research..."})
             result = await asyncio.to_thread(orchestrator_node, state)
             state.update(result)
@@ -83,6 +85,7 @@ async def run_research(request: ResearchRequest):
             })
 
             # ── Step 2: Parallel data gathering ───────────────────────
+            stage = "data gathering"
             yield sse("agent_start", {"agent": "web_researcher", "message": f"Searching {len(state.get('sub_questions', []))} questions..."})
             yield sse("agent_start", {"agent": "financial_data", "message": f"Fetching {state.get('ticker')} fundamentals..."})
             yield sse("agent_start", {"agent": "news_agent", "message": "Scanning last 7 days of news..."})
@@ -95,6 +98,7 @@ async def run_research(request: ResearchRequest):
             yield sse("agent_done", {"agent": "news_agent", "sentiment": state.get("news_data", [{}])[0].get("sentiment", "neutral") if state.get("news_data") else "neutral"})
 
             # ── Step 3: Writer + Critic loop ──────────────────────────
+            stage = "writer and critic"
             for attempt in range(3):  # max 2 revisions = 3 attempts
                 revision = state.get("revision_count", 0)
                 msg = "Writing research note..." if revision == 0 else f"Rewriting (revision {revision})..."
@@ -118,6 +122,7 @@ async def run_research(request: ResearchRequest):
                     break
 
             # ── Step 4: Scorer — weighted scorecard on the finished note ──
+            stage = "scorer"
             yield sse("agent_start", {"agent": "scorer", "message": "Scoring across 6 weighted categories..."})
             result = await asyncio.to_thread(scorer_node, state)
             state.update(result)
@@ -172,7 +177,7 @@ async def run_research(request: ResearchRequest):
             yield sse("pipeline_done", {"note_id": note_id, "note": note_data})
 
         except Exception as e:
-            yield sse("error", {"message": str(e)})
+            yield sse("error", {"message": f"Pipeline stopped during {stage}: {e}"})
         finally:
             research_run_lock.release()
 
