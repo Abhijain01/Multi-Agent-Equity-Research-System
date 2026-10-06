@@ -1,7 +1,7 @@
 """
 tests/test_agents.py
 Unit tests for all 5 agents.
-Mocks Groq so no real API calls are made.
+Mocks Gemini so no real API calls are made.
 
 Run: pytest tests/test_agents.py -v
 """

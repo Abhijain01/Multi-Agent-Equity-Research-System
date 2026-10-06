@@ -7,7 +7,7 @@ Scores each research note on factuality, completeness, actionability (1-5).
 import os
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 
@@ -51,10 +51,10 @@ _llm = None
 def _get_llm():
     global _llm
     if _llm is None:
-        _llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+        _llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=os.getenv("GEMINI_API_KEY"),
         )
     return _llm
 

@@ -17,7 +17,7 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 from pydantic import BaseModel, Field
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from dotenv import load_dotenv
 
@@ -68,10 +68,10 @@ class JudgeOutput(BaseModel):
 
 def score_note(note_text: str) -> dict:
     """Run LLM-as-judge on a note. Returns scores dict."""
-    llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-3.6-flash",
         temperature=0,
-        api_key=os.getenv("GROQ_API_KEY"),
+        api_key=os.getenv("GEMINI_API_KEY"),
     )
     structured = llm.with_structured_output(JudgeOutput)
     result: JudgeOutput = structured.invoke([

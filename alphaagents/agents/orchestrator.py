@@ -31,7 +31,7 @@ Output shape:
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from alphaagents.graph.state import ResearchState
@@ -45,7 +45,7 @@ load_dotenv()
 class OrchestratorOutput(BaseModel):
     """
     Structured output from the orchestrator agent.
-    Groq will populate these fields via with_structured_output().
+    Gemini will populate these fields via with_structured_output().
     """
     company: str = Field(
         description="The exact, full company name. E.g. 'Reliance Industries', 'HDFC Bank', 'Tata Consultancy Services'"
@@ -77,14 +77,14 @@ _llm = None
 def _get_llm():
     global _llm
     if _llm is None:
-        api_key = os.getenv("GROQ_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError(
-                "GROQ_API_KEY not found in environment. "
+                "GEMINI_API_KEY not found in environment. "
                 "Add it to your .env file."
             )
-        _llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+        _llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,           # deterministic output for research planning
             api_key=api_key,
         )
@@ -116,8 +116,8 @@ def orchestrator_node(state: ResearchState) -> dict:
         HumanMessage(content=f"Research query: {query}"),
     ]
 
-    # Call Groq
-    print("[ORCHESTRATOR] Calling Groq (Llama-3.3-70B)...")
+    # Call Gemini
+    print("[ORCHESTRATOR] Calling Gemini (gemini-3.6-flash)...")
     result: OrchestratorOutput = structured_llm.invoke(messages, config=get_langfuse_config("orchestrator", state))
 
     print(f"[ORCHESTRATOR] Company identified: {result.company} ({result.ticker})")

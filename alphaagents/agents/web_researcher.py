@@ -10,14 +10,14 @@ LangGraph role:
   Returns {"web_results": [...]}
 
 Flow:
-  For each sub-question → search via Tavily (cached) → summarise with Groq
-  One Groq call per sub-question to keep outputs focused and cited.
+  For each sub-question → search via Tavily (cached) → summarise with Gemini
+  One Gemini call per sub-question to keep outputs focused and cited.
 """
 
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from alphaagents.graph.state import ResearchState
@@ -49,10 +49,10 @@ _llm = None
 def _get_llm():
     global _llm
     if _llm is None:
-        _llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+        _llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=os.getenv("GEMINI_API_KEY"),
         )
     return _llm
 
@@ -99,7 +99,7 @@ def web_researcher_node(state: ResearchState) -> dict:
             for r in raw_results
         ])
 
-        # 3. Ask Groq to summarise with citations
+        # 3. Ask Gemini to summarise with citations
         messages = [
             SystemMessage(content=WEB_RESEARCHER_PROMPT),
             HumanMessage(content=(

@@ -1,11 +1,11 @@
 # Agent Framework
 langgraph
 langchain
-langchain-groq
+langchain-google-genai
 langchain-community
 
 # LLM
-groq
+google-genai
 
 # Search
 tavily-python

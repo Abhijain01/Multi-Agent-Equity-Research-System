@@ -2,7 +2,7 @@
 agents/news_agent.py
 
 The News Agent — fetches recent company news via NewsAPI
-and uses Groq to extract sentiment and key events.
+and uses Gemini to extract sentiment and key events.
 
 LangGraph role:
   Runs in PARALLEL with web_researcher and financial_data after orchestrator.
@@ -10,13 +10,13 @@ LangGraph role:
   Returns {"news_data": [...]}
 
 Flow:
-  get_news(company) → format articles → one Groq call for sentiment + key events
+  get_news(company) → format articles → one Gemini call for sentiment + key events
 """
 
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from alphaagents.graph.state import ResearchState
@@ -60,10 +60,10 @@ _llm = None
 def _get_llm():
     global _llm
     if _llm is None:
-        _llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+        _llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=os.getenv("GEMINI_API_KEY"),
         )
     return _llm
 
@@ -112,7 +112,7 @@ def news_agent_node(state: ResearchState) -> dict:
     # 2. Format articles for LLM
     articles_text = _format_articles_for_prompt(articles)
 
-    # 3. Ask Groq to extract sentiment + key events
+    # 3. Ask Gemini to extract sentiment + key events
     llm = _get_llm()
     structured_llm = llm.with_structured_output(NewsOutput)
 
@@ -126,12 +126,12 @@ def news_agent_node(state: ResearchState) -> dict:
         )),
     ]
 
-    print(f"[NEWS AGENT] Analysing sentiment and key events with Groq...")
+    print(f"[NEWS AGENT] Analysing sentiment and key events with Gemini...")
 
     try:
         result: NewsOutput = structured_llm.invoke(messages)
     except Exception as e:
-        print(f"[NEWS AGENT] ⚠️  Groq call failed: {e}")
+        print(f"[NEWS AGENT] ⚠️  Gemini call failed: {e}")
         return {"news_data": [{
             "sentiment": "neutral",
             "sentiment_reason": "News analysis failed due to an error.",

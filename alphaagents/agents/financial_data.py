@@ -2,7 +2,7 @@
 agents/financial_data.py
 
 The Financial Data Agent — pulls stock fundamentals via yfinance
-and uses Groq to produce a structured financial analysis.
+and uses Gemini to produce a structured financial analysis.
 
 LangGraph role:
   Runs in PARALLEL with web_researcher and news agents after orchestrator.
@@ -10,13 +10,13 @@ LangGraph role:
   Returns {"financial_data": {...}}
 
 Flow:
-  get_fundamentals(ticker) → format metrics → one Groq call for analysis paragraph
+  get_fundamentals(ticker) → format metrics → one Gemini call for analysis paragraph
 """
 
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from alphaagents.graph.state import ResearchState
@@ -52,10 +52,10 @@ _llm = None
 def _get_llm():
     global _llm
     if _llm is None:
-        _llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+        _llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=os.getenv("GEMINI_API_KEY"),
         )
     return _llm
 
@@ -131,7 +131,7 @@ def financial_data_node(state: ResearchState) -> dict:
     # 2. Format metrics for the LLM
     metrics_text = _format_metrics_for_prompt(raw_data)
 
-    # 3. Ask Groq to produce structured financial analysis
+    # 3. Ask Gemini to produce structured financial analysis
     llm = _get_llm()
     structured_llm = llm.with_structured_output(FinancialOutput)
 
@@ -145,7 +145,7 @@ def financial_data_node(state: ResearchState) -> dict:
         )),
     ]
 
-    print(f"[FINANCIAL DATA] Generating analysis with Groq...")
+    print(f"[FINANCIAL DATA] Generating analysis with Gemini...")
     analysis: FinancialOutput = structured_llm.invoke(messages)
 
     # 4. Merge raw data + LLM analysis into one dict
